@@ -20,6 +20,7 @@ local allowedUsers = {
     ["Zaknafarin"] = true
 }
 
+local locked = false
 local active = false
 local last_active = false
 local commands = {}
@@ -40,8 +41,13 @@ local log_file = filesystem.open(log_path, "a")
 -- commands after "#dfc"
 
 commands["on"] = function()
-    chat.say("DFC on")
-    active = true
+    if locked then
+        chat.say("DFC is still locked after server restart")
+        chat.say("use #dfc auth to unlock it")
+    else
+        chat.say("DFC on")
+        active = true
+    end
 end
 
 commands["off"] = function()
@@ -69,6 +75,15 @@ commands["power"] = function(args)
     end
 end
 
+commands["auth"] = function()
+    if locked then
+        locked = false
+        chat.say("DFC is now unlocked")
+    else
+        chat.say("DFC is already unlocked")
+    end
+end
+
 -- split function for args
 
 local function split(input)
@@ -90,7 +105,7 @@ local function getTime()
     end
 
     local data = json.decode(result)
-    return data.datetime
+    return data.utc_datetime
 end
 
 
@@ -124,6 +139,7 @@ function doAuthorizedShit(username , message)
             chat.say("#dfc off")
             chat.say("#dfc power")
             chat.say("#dfc power 100  <- only goes 1-100")
+            chat.say("#dfc auth")
             emitter.setActive(last_active)
         end
 
@@ -138,9 +154,23 @@ end
 -- loop loop loop loop
 
 while true do
-    local _, _, username, message = event.pull("chat_message")
+    local _, _, username, message = event.pull(300, "chat_message") -- 30 seconds timeout -> time check is only every 30 seconds
 
     if allowedUsers[username] then
         doAuthorizedShit(username, message)
+    end
+
+    print("debug")
+    local time = getTime()
+    local hour, min = string.match(time, "T(%d%d):(%d%d)")
+    hour, min = tonumber(hour), tonumber(min)
+
+    if hour % 4 == 0 and min < 10 then
+        print("DFC shutdown because of server restart")
+        if not locked then
+            locked = true
+            emitter.setActive(false)
+            emitter.setInput(1) -- set power to 1 because idk dont set the power to high
+        end
     end
 end

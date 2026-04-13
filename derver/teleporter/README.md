@@ -21,6 +21,6 @@
     - spatial pulse
     - import  on
     - storage on
-    - wait 0.5 seconds
+    - wait 1 second
     - import  off
     - storage off

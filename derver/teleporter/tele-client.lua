@@ -22,6 +22,7 @@ local stations = {}
 local remoteStation
 local inbound = false
 
+local clientName = "earth"
 local server = "tele-server"
 local port = 7000
 
@@ -117,14 +118,14 @@ local function handleSend()
 end
 
 local function handleReceive()
-    print("teleport wird hier jetzt verarbeitet")
+    print("")
 
     inbound = false
     remoteStation = false
     print("finished receiving")
 end
 
-query("register", "space")
+query("register", clientName)
 getStationList()
 while running do
     updateBackLog()

@@ -160,7 +160,6 @@ while true do
         doAuthorizedShit(username, message)
     end
 
-    print("debug")
     local time = getTime()
     local hour, min = string.match(time, "T(%d%d):(%d%d)")
     hour, min = tonumber(hour), tonumber(min)

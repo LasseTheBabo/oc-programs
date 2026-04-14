@@ -23,9 +23,54 @@ local function query(connection, ...)
    connection:write(table.concat({...}, "\t").."\n")
 end
 
+local function queryWait(connection, ...)
+    while true do
+        local response
+
+        repeat
+            response = connection:read("\n")
+            os.sleep(0.1)
+        until response
+
+        local parts = split(response)
+
+        for _, pattern in ipairs({...}) do
+            local match = table.pack(response:match(pattern))
+            if parts[1] == pattern then
+                return table.unpack(parts, 2) -- 2 because only return message -> {command, message}
+            end
+        end
+    end
+end
+
 function doTeleShit()
     local sender, receiver = table.unpack(currentRequest)
+
+    for i, c in ipairs(connections) do
+        if c~=sender and c~=receiver then
+            query(c, "busy", "server is processing a teleport")
+        end
+    end
+
     query(receiver, "inbound", sender.name)
+    queryWait(sender, "phase1-end")
+
+    query(receiver, "phase2-begin")
+    queryWait(receiver, "phase2-end")
+
+    query(sender, "phase3-begin")
+    queryWait(sender, "phase3-end")
+
+    query(receiver, "phase4-begin")
+    queryWait(receiver, "phase4-end")
+
+    query(sender, "phase5-begin")
+    queryWait(sender, "phase5-end")
+
+    query(receiver, "phase6-begin")
+    queryWait(receiver, "phase6-end")
+
+    -- TODO: free other deles because of locking shit
 
     currentRequest = nil
 end
@@ -109,4 +154,4 @@ function start(deamon)
     end
 end
 
-start(false)
+start(true)

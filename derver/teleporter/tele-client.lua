@@ -7,7 +7,7 @@ local event = require("event")
 
 -- component config
 
-local rs = component.redstone
+local redstone = component.redstone
 
 local rsReceive = sides.east
 local rsSend = sides.top
@@ -40,6 +40,20 @@ print("connection established")
 
 -- some helping shit
 
+local function setRedstone(side, value)
+    redstone.setOutput(side, 15)
+end
+
+local function readRedstone(side)
+    return redstone.getInput(side)
+end
+
+local function pulseRedstone(side)
+    setRedstone(side, 15)
+    os.sleep(0.1)
+    setRedstone(side, 0)
+end
+
 local function split(msg)
    local ret = {}
    for x in msg:gmatch("[^\t]+") do
@@ -52,7 +66,7 @@ local function query(...)
    connection:write(table.concat({...}, "\t").."\n")
 end
 
-local function queryWait(pattern)
+local function queryWait(...)
     while true do
         local response
 
@@ -63,8 +77,11 @@ local function queryWait(pattern)
 
         local parts = split(response)
 
-        if parts[1] == pattern then
-            return table.unpack(parts, 2)
+        for _, pattern in ipairs({...}) do
+            local match = table.pack(response:match(pattern))
+            if parts[1] == pattern then
+                return table.unpack(parts, 2) -- 2 because only return message -> {command, message}
+            end
         end
     end
 end
@@ -113,12 +130,55 @@ local function handleSend()
     print("teleporting...")
     query("request", remoteStation)
 
+    -- phase 1
+    pulseRedstone(rsSpatialIO)
+    setRedstone(rsInport, 15)
+    query("phase1-end")
+
+    -- phase 3
+    queryWait("phase3-begin")
+    while readRedstone(rsSpatialIO_read) do
+        os.sleep(0.1)
+    end
+    setRedstone(rsImport, 0)
+    query("phase3-end")
+
+    -- phase 5
+    queryWait("phase5-begin")
+    setRedstone(rsStorage, 15)
+    while not readRedstone(rsSpatialIO_read) do
+    os.sleep(0.1)
+        setRedstone(rsStorage, 0)
+    query("phase5-end")
     
     print("finished sending")
 end
 
 local function handleReceive()
-    print("")
+    print("incoming teleport...")
+
+    -- phase 2
+    queryWait("phase2-begin")
+    pulseRedstone(rsSpatialIO)
+    setRedstone(rsStorage, 15)
+    query("phase2-end")
+    
+    -- phase 4
+    queryWait("phase4-begin")
+    setRedstone(rsStorage, 0)
+    setRedstone(rsImport, 15)
+    query("phase5-end")
+
+    -- phase 6
+    queryWait("phase6-begin")
+    setRedstone(rsImport, 0)
+    pulseRedstone(rsSpatialIO)
+    setRedstone(rsImport, 15)
+    setRedstone(rsStorage, 15)
+    os.sleep(1)
+    setRedstone(rsImport, 0)
+    setRedstone(rsStorage, 0)
+    queryWait("phase6-end")
 
     inbound = false
     remoteStation = false

@@ -1,3 +1,8 @@
+## TODO
+- busy clients if server is processing
+- queue necessary?
+- some kind of library for duplicate functions
+
 
 ## Spatial IO cell transport protocol
 - Phase 1 (A)

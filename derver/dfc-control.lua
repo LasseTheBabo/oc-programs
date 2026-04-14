@@ -3,10 +3,12 @@ local filesystem = require("filesystem")
 local event = require("event")
 local internet = require("internet")
 local json = require("json")
+local sides = require("sides")
 
+local redstone = component.redstone
+local tank = component.ntm_fluid_tank
 local emitter = component.dfc_emitter
 local chat = component.chat_box
-chat.setName("DFC")
 
 
 -- some variables
@@ -20,6 +22,9 @@ local allowedUsers = {
     ["Zaknafarin"] = true
 }
 
+chat.setName("DFC")
+local sirenSide = sides.top -- independent of direction
+local cryoShutdownThreshold = 0.9 -- cryogel level should even be under 90%
 local locked = false
 local active = false
 local last_active = false
@@ -108,6 +113,12 @@ local function getTime()
     return data.utc_datetime
 end
 
+local function formattedTime()
+    local time = getTime()
+    local hour, min, sec = string.match(time, "T(%d%d):(%d%d):(%d%d)")
+    return tonumber(hour), tonumber(min), tonumber(sec)
+end
+
 
 -- palantir
 
@@ -117,7 +128,7 @@ local function log(log_info)
 end
 
 
-function doAuthorizedShit(username , message)
+function doAuthorizedShit(username, message)
     local parts = split(message)
 
     if parts[1] == "#dfc" then
@@ -151,6 +162,39 @@ function doAuthorizedShit(username , message)
 end
 
 
+-- security checks
+
+local function emergency()
+    if not locked then
+        log("emergency shutdown!")
+        locked = true
+        emitter.setActive(false)
+        emitter.setInput(1) -- set power to 1 because idk dont set the power to high
+    end
+end
+
+local function checkTime()
+    local hour, min = formattedTime()
+
+    if hour % 4 == 0 and min < 10 then
+        log("WARNING: server restart")
+        emergency()
+    end
+end
+
+-- cryoshit
+
+local function checkCryogel()
+    local max, stored = tank.getMaxStored(), tank.getFluidStored()
+    local fillPercent = max / stored
+
+    if fillPercent < cryoShutdownThreshold then
+        chat.say("WARNING: check cryogel production")
+        emergency()
+    end
+end
+
+
 -- loop loop loop loop
 
 while true do
@@ -160,16 +204,6 @@ while true do
         doAuthorizedShit(username, message)
     end
 
-    local time = getTime()
-    local hour, min = string.match(time, "T(%d%d):(%d%d)")
-    hour, min = tonumber(hour), tonumber(min)
-
-    if hour % 4 == 0 and min < 10 then
-        print("DFC shutdown because of server restart")
-        if not locked then
-            locked = true
-            emitter.setActive(false)
-            emitter.setInput(1) -- set power to 1 because idk dont set the power to high
-        end
-    end
+    checkTime()
+    checkCryogel()
 end

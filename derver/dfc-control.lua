@@ -164,6 +164,14 @@ end
 
 -- security checks
 
+local function siren(state)
+    if state then
+        redstone.setOutput(sirenSide, 15)
+    else
+        redstone.setOutput(sirenSide, 0)
+    end
+end
+
 local function emergency()
     if not locked then
         log("emergency shutdown!")
@@ -187,8 +195,11 @@ end
 local function checkCryogel()
     local max, stored = tank.getMaxStored(), tank.getFluidStored()
     local fillPercent = max / stored
+    local toLow = fillPercent < cryoShutdownThreshold
 
-    if fillPercent < cryoShutdownThreshold then
+    siren(toLow)
+
+    if toLow then
         chat.say("WARNING: check cryogel production")
         emergency()
     end
@@ -198,7 +209,7 @@ end
 -- loop loop loop loop
 
 while true do
-    local _, _, username, message = event.pull(300, "chat_message") -- 30 seconds timeout -> time check is only every 30 seconds
+    local _, _, username, message = event.pull(100, "chat_message") -- 30 seconds timeout -> time check is only every 30 seconds
 
     if allowedUsers[username] then
         doAuthorizedShit(username, message)

@@ -3,6 +3,7 @@ local sides = require("sides")
 local os = require("os")
 local minitel = require("minitel")
 local event = require("event")
+local tele = require("tele-lib")
 
 
 -- component config
@@ -14,8 +15,6 @@ local rsSend = sides.top
 local rsSpatialIO = sides.north
 
 
--- connecting to server
-
 local running = true
 local queryBackLog = {}
 local stations = {}
@@ -25,17 +24,6 @@ local inbound = false
 local clientName = "earth"
 local server = "tele-server"
 local port = 7000
-
-print("connecting to server...")
-print(server..":"..port)
-local connection, r = minitel.open(server, port)
-
-if not connection then
-    print("unable to open connection: "..r)
-    return
-end
-
-print("connection established")
 
 
 -- some helping shit
@@ -54,37 +42,23 @@ local function pulseRedstone(side)
     setRedstone(side, 0)
 end
 
-local function split(msg)
-   local ret = {}
-   for x in msg:gmatch("[^\t]+") do
-      table.insert(ret, x)
-   end
-   return ret
+local function log(message)
+    print(message)
 end
 
-local function query(...)
-   connection:write(table.concat({...}, "\t").."\n")
+
+-- connecting to server
+
+log("connecting to server...")
+log(server..":"..port)
+local connection, r = minitel.open(server, port)
+
+if not connection then
+    log("unable to open connection: "..r)
+    return
 end
 
-local function queryWait(...)
-    while true do
-        local response
-
-        repeat
-            response = connection:read("\n")
-            os.sleep(0.1)
-        until response
-
-        local parts = split(response)
-
-        for _, pattern in ipairs({...}) do
-            local match = table.pack(response:match(pattern))
-            if parts[1] == pattern then
-                return table.unpack(parts, 2) -- 2 because only return message -> {command, message}
-            end
-        end
-    end
-end
+log("connection established")
 
 
 -- BackLog handling for query traffic in the background
@@ -99,12 +73,12 @@ end
 
 local function handleBackLog()
     for i = #queryBackLog, 1, -1 do
-        local command, argument = table.unpack(split(queryBackLog[i]))
+        local command, argument = table.unpack(tele.split(queryBackLog[i]))
 
         if command == "inbound" then
-            print("incoming teleport...")
+            log("incoming teleport...")
             if remoteStation then
-                query("reject") -- reject inbound because something is still going on
+                tele.query(connection, "reject") -- reject inbound because something is still going on
             else
                 inbound = true
                 remoteStation = argument
@@ -118,59 +92,59 @@ local function handleBackLog()
 end
 
 local function getStationList()
-    print("\navailable teleporter")
-    query("get_list")
-    stations = {queryWait("list")}
+    log("\navailable teleporter")
+    tele.query(connection, "get_list")
+    stations = {tele.queryWait(connection, "list")}
     for i, station in ipairs(stations) do
-        print(i.." "..station)
+        log(i.." "..station)
     end
 end
 
 local function handleSend()
-    print("teleporting...")
-    query("request", remoteStation)
+    log("teleporting...")
+    tele.query(connection, "request", remoteStation)
 
     -- phase 1
     pulseRedstone(rsSpatialIO)
     setRedstone(rsInport, 15)
-    query("phase1-end")
+    tele.query(connection, "phase1-end")
 
     -- phase 3
-    queryWait("phase3-begin")
+    tele.queryWait(connection, "phase3-begin")
     while readRedstone(rsSpatialIO_read) do
         os.sleep(0.1)
     end
     setRedstone(rsImport, 0)
-    query("phase3-end")
+    tele.query(connection, "phase3-end")
 
     -- phase 5
-    queryWait("phase5-begin")
+    tele.queryWait(connection, "phase5-begin")
     setRedstone(rsStorage, 15)
     while not readRedstone(rsSpatialIO_read) do
     os.sleep(0.1)
         setRedstone(rsStorage, 0)
-    query("phase5-end")
+    tele.query(connection, "phase5-end")
     
-    print("finished sending")
+    log("finished sending")
 end
 
 local function handleReceive()
-    print("incoming teleport...")
+    log("incoming teleport...")
 
     -- phase 2
-    queryWait("phase2-begin")
+    tele.queryWait(connection, "phase2-begin")
     pulseRedstone(rsSpatialIO)
     setRedstone(rsStorage, 15)
-    query("phase2-end")
+    tele.query(connection, "phase2-end")
     
     -- phase 4
-    queryWait("phase4-begin")
+    tele.queryWait(connection, "phase4-begin")
     setRedstone(rsStorage, 0)
     setRedstone(rsImport, 15)
-    query("phase5-end")
+    tele.query(connection, "phase5-end")
 
     -- phase 6
-    queryWait("phase6-begin")
+    tele.queryWait(connection, "phase6-begin")
     setRedstone(rsImport, 0)
     pulseRedstone(rsSpatialIO)
     setRedstone(rsImport, 15)
@@ -178,14 +152,14 @@ local function handleReceive()
     os.sleep(1)
     setRedstone(rsImport, 0)
     setRedstone(rsStorage, 0)
-    queryWait("phase6-end")
+    tele.query(connection, "phase6-end")
 
     inbound = false
     remoteStation = false
-    print("finished receiving")
+    log("finished receiving")
 end
 
-query("register", clientName)
+tele.query(connection, "register", clientName)
 getStationList()
 while running do
     updateBackLog()
@@ -213,5 +187,5 @@ while running do
     end
 end
 
-print("disconnecting")
+log("disconnecting")
 connection:close()

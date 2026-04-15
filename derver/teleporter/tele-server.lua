@@ -2,6 +2,7 @@ local event = require("event")
 local minitel = require("minitel")
 local thread = require("thread")
 local computer = require("computer")
+local tele = require("tele-lib")
 
 local port = 7000
 
@@ -11,64 +12,32 @@ local currentRequest
 local connectionThread
 local connectionListener
 
-local function split(msg)
-   local ret = {}
-   for x in msg:gmatch("[^\t]+") do
-      table.insert(ret, x)
-   end
-   return ret
-end
-
-local function query(connection, ...)
-   connection:write(table.concat({...}, "\t").."\n")
-end
-
-local function queryWait(connection, ...)
-    while true do
-        local response
-
-        repeat
-            response = connection:read("\n")
-            os.sleep(0.1)
-        until response
-
-        local parts = split(response)
-
-        for _, pattern in ipairs({...}) do
-            local match = table.pack(response:match(pattern))
-            if parts[1] == pattern then
-                return table.unpack(parts, 2) -- 2 because only return message -> {command, message}
-            end
-        end
-    end
-end
-
 function doTeleShit()
     local sender, receiver = table.unpack(currentRequest)
 
     for i, c in ipairs(connections) do
         if c~=sender and c~=receiver then
-            query(c, "busy", "server is processing a teleport")
+            tele.query(c, "busy", "server is processing a teleport")
         end
     end
 
-    query(receiver, "inbound", sender.name)
-    queryWait(sender, "phase1-end")
+    tele.query(receiver, "inbound", sender.name)
+    tele.queryWait(sender, "phase1-end")
 
-    query(receiver, "phase2-begin")
-    queryWait(receiver, "phase2-end")
+    tele.query(receiver, "phase2-begin")
+    tele.queryWait(receiver, "phase2-end")
 
-    query(sender, "phase3-begin")
-    queryWait(sender, "phase3-end")
+    tele.query(sender, "phase3-begin")
+    tele.queryWait(sender, "phase3-end")
 
-    query(receiver, "phase4-begin")
-    queryWait(receiver, "phase4-end")
+    tele.query(receiver, "phase4-begin")
+    tele.queryWait(receiver, "phase4-end")
 
-    query(sender, "phase5-begin")
-    queryWait(sender, "phase5-end")
+    tele.query(sender, "phase5-begin")
+    tele.queryWait(sender, "phase5-end")
 
-    query(receiver, "phase6-begin")
-    queryWait(receiver, "phase6-end")
+    tele.query(receiver, "phase6-begin")
+    tele.queryWait(receiver, "phase6-end")
 
     -- TODO: free other deles because of locking shit
 
@@ -76,8 +45,6 @@ function doTeleShit()
 end
 
 function handleMessage(connection, command, ...)
-    print("command: "..command)
-
     if command == "request" then
         local target, targetConnection = ...
 
@@ -87,8 +54,8 @@ function handleMessage(connection, command, ...)
             end
         end
 
-        if currentRequest then query(connection, "cancel", "a request is in progress") return end
-        if not targetConnection then query(connection, "cancel", "no station "..target) return end
+        if currentRequest then tele.query(connection, "cancel", "a request is in progress") return end
+        if not targetConnection then tele.query(connection, "cancel", "no station "..target) return end
 
         currentRequest = {connection, targetConnection}
 
@@ -102,9 +69,9 @@ function handleMessage(connection, command, ...)
             table.insert(stationNames, c.name)
         end
 
-        query(connection, "list", table.unpack(stationNames))
+        tele.query(connection, "list", table.unpack(stationNames))
     else
-        query(connection, "unknown command")
+        tele.query(connection, "unknown command")
     end
 end
 
@@ -117,8 +84,7 @@ function runConnectionThread()
             local message = connection:read("\n")
 
             if message then
-                print("received message: "..message)
-                handleMessage(connection, table.unpack(split(message)))
+                handleMessage(connection, table.unpack(tele.split(message)))
             end
 
             -- keep index to not skip after remove

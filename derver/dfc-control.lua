@@ -25,6 +25,8 @@ local allowedUsers = {
 chat.setName("DFC")
 local sirenSide = sides.top -- independent of direction
 local cryoShutdownThreshold = 0.9 -- cryogel level should even be under 90%
+local aliveTime = computer.uptime()
+local aliveThreshold = 60 -- time after dfc shuts down in seconds
 local locked = false
 local active = false
 local last_active = false
@@ -176,6 +178,7 @@ local function emergency()
     if not locked then
         log("emergency shutdown!")
         locked = true
+        active = false
         emitter.setActive(false)
         emitter.setInput(1) -- set power to 1 because idk dont set the power to high
     end
@@ -190,8 +193,6 @@ local function checkTime()
     end
 end
 
--- cryoshit
-
 local function checkCryogel()
     local max, stored = tank.getMaxStored(), tank.getFluidStored()
     local fillPercent = max / stored
@@ -203,6 +204,13 @@ local function checkCryogel()
         chat.say("WARNING: check cryogel production")
         emergency()
     end
+end
+
+local function checkAliveTime()
+    if (aliveTime) + aliveThreshold < computer.uptime() then
+	    aliveTime = computer.uptime()
+        log("WARNING: DFC is already on for "..aliveTime.."! Shutting down...")
+	end
 end
 
 
@@ -217,4 +225,5 @@ while true do
 
     checkTime()
     checkCryogel()
+    checkAliveTime()
 end

@@ -32,6 +32,8 @@ local active = false
 local last_active = false
 local commands = {}
 
+local time
+
 local log_path = "/dfc_log.txt"
 
 
@@ -104,7 +106,7 @@ end
 
 -- some real time shit
 
-local function getTime()
+local function getUnformattedTime()
     local handle = internet.request("https://time.now/developer/api/timezone/Europe/Berlin")
     local result = ""
     for chunk in handle do
@@ -115,9 +117,15 @@ local function getTime()
     return data.utc_datetime
 end
 
-local function formattedTime()
-    local time = getTime()
+local function getDate()
+    local year, month, day = string.match(time, "(%d%d%d%d)%-(%d%d)%-(%d%d)")
+    
+    return tonumber(year), tonumber(month), tonumber(day)
+end
+
+local function getTime()
     local hour, min, sec = string.match(time, "T(%d%d):(%d%d):(%d%d)")
+    
     return tonumber(hour), tonumber(min), tonumber(sec)
 end
 
@@ -158,7 +166,13 @@ function doAuthorizedShit(username, message)
 
         last_active = active
 
-        local log_info = getTime() .. " > " .. username .. ": " .. message
+        local year, month, day = getDate()
+        local hour, min, sec = getTime()
+        local log_info = string.format(
+            "%02d:%02d:%02d %02d.%02d.%04d > %s: %s",
+            hour, min, sec, day, month, year, username, message
+        )
+        
         log(log_info)
     end
 end
@@ -185,7 +199,7 @@ local function emergency()
 end
 
 local function checkTime()
-    local hour, min = formattedTime()
+    local hour, min = getTime()
 
     if hour % 4 == 0 and min < 10 then
         log("WARNING: server restart")
@@ -195,7 +209,7 @@ end
 
 local function checkCryogel()
     local max, stored = tank.getMaxStored(), tank.getFluidStored()
-    local fillPercent = max / stored
+    local fillPercent = stored / max
     local toLow = fillPercent < cryoShutdownThreshold
 
     siren(toLow)
@@ -217,7 +231,8 @@ end
 -- loop loop loop loop
 
 while true do
-    local _, _, username, message = event.pull(100, "chat_message") -- 30 seconds timeout -> time check is only every 30 seconds
+    time = getUnformattedTime()
+    local _, _, username, message = event.pull(100, "chat_message") -- 100 or 10 seconds timeout? -> time check is only every 30 seconds
 
     if allowedUsers[username] then
         doAuthorizedShit(username, message)

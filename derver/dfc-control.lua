@@ -6,39 +6,41 @@ local json = require("json")
 local sides = require("sides")
 local computer = require("computer")
 
---local redstone = component.redstone
---local tank = component.ntm_fluid_tank
+local redstone = component.redstone
 local emitter = component.dfc_emitter
 local chat = component.chat_box
 
 
 -- some variables
 
-local allowedUsers = {
-    ["highPetya"] = true,
-    ["Kirby73"] = true,
-    ["Mantoshka"] = true,
-    ["LasseTheBabo"] = true, -- maintenance and testing
-    ["Val_MuMu"] = true,
-    ["Zaknafarin"] = true
-}
+local 
 
 chat.setName("DFC")
-local sirenSide = sides.top -- independent of direction
-local cryoShutdownThreshold = 0.9 -- cryogel level should even be under 90%
-local aliveTime = computer.uptime()
-local aliveThreshold = 900 -- time after dfc shuts down in seconds
 local locked = false
+local angry = false
 local active = false
-local last_active = false
 local commands = {}
+
+local angrySide = sides.top
 
 local time
 
 local log_path = "/dfc_log.txt"
+local configPath = "/etc/dfc.cfg"
+
+local config = {
+    userBiometrics = {}
+    allowedUsers = {
+        ["highPetya"] = true,
+        ["Kirby73"] = true,
+        ["LasseTheBabo"] = true, -- maintenance and testing
+        ["Val_MuMu"] = true,
+        ["Zaknafarin"] = true
+    }
+}
 
 
--- log file stuff
+-- file stuff
 
 if not filesystem.exists(log_path) then
     local handle = filesystem.open(log_path, "w")
@@ -46,6 +48,48 @@ if not filesystem.exists(log_path) then
 end
 
 local log_file = filesystem.open(log_path, "a")
+
+
+local function saveConfig()
+    local h, r = io.open(configPath, "wb")
+    if not h then return false, "unable to open config: "..r end
+    h:write(serialization.serialize(config, true))
+    h:close()
+    return true
+end
+
+local function mergeRecursive(t, from)
+    for k, v in pairs(from) do
+        if type(v) == "table" and type(t[k]) == "table" then
+            mergeRecursive(t[k], v)
+        else
+            t[k] = v
+        end
+    end
+end
+
+local function loadConfig()
+    local h, r = io.open(configPath, "rb")
+    if not h then return false, "unable to open config: "..r end
+    local data = h:read("*a")
+    h:close()
+    local cfg, r = serialization.unserialize(data)
+    if not cfg then return false, "unable to unserialize config: "..r end
+    mergeRecursive(config, cfg)
+    return true
+end
+
+do local s, r = loadConfig()
+    if not s then
+        print(r)
+        print("using default config")
+    end
+end
+saveConfig()
+
+-- daingerus
+
+
 
 
 -- commands after "#dfc"
@@ -56,15 +100,13 @@ commands["on"] = function()
         chat.say("use #dfc unlock to unlock it")
     else
         chat.say("DFC on")
-        active = true
-        aliveTime = computer.uptime()
+        emitter.setActive(true)
     end
 end
 
 commands["off"] = function()
     chat.say("DFC off")
-    active = false
-    aliveTime = computer.uptime()
+    emitter.setActive(false)
 end
 
 commands["power"] = function(args)
@@ -93,6 +135,15 @@ commands["unlock"] = function()
         chat.say("DFC is now unlocked")
     else
         chat.say("DFC is already unlocked")
+    end
+end
+
+commands["angry"] = function()
+    if angry then
+        chat.say("DFC is already angry")
+    else
+        chat.say("verify yourself at the biometric scanner")
+        
     end
 end
 
@@ -155,7 +206,6 @@ function doAuthorizedShit(username, message)
 
         if commands[command] then
             commands[command](args)
-            emitter.setActive(active)
         else
             chat.say("Unknown command :(")
             chat.say("Here are some commands:")
@@ -164,10 +214,8 @@ function doAuthorizedShit(username, message)
             chat.say("#dfc power")
             chat.say("#dfc power 100  <- only goes 1-100")
             chat.say("#dfc unlock")
-            emitter.setActive(last_active)
+            chat.say("#dfc angry")
         end
-
-        last_active = active
 
         local year, month, day = getDate()
         local hour, min, sec = getTime()
@@ -183,19 +231,11 @@ end
 
 -- security checks
 
-local function siren(state)
-    if state then
-        --redstone.setOutput(sirenSide, 15)
-    else
-        --redstone.setOutput(sirenSide, 0)
-    end
-end
-
-local function emergency()
+local function emergency(message)
     if not locked then
+        log(message)
         log("emergency shutdown!")
         locked = true
-        active = false
         emitter.setActive(false)
         emitter.setInput(1) -- set power to 1 because idk dont set the power to high
     end
@@ -206,33 +246,8 @@ local function checkTime()
 
     if hour % 4 == 0 and min < 10 then
         if not locked then
-            log("WARNING: server restart")
-            emergency()
+            emergency("WARNING: server restart")
         end
-    end
-end
-
-local function checkCryogel()
-    local max, stored = 1, 1--tank.getMaxStored(), tank.getFluidStored()
-    local fillPercent = stored / max
-    local toLow = fillPercent < cryoShutdownThreshold
-
-    siren(toLow)
-
-    if toLow then
-        chat.say("WARNING: check cryogel production")
-        emergency()
-    end
-end
-
-local function checkAliveTime()
-    if active then
-        if (aliveTime) + aliveThreshold < computer.uptime() then
-            log("WARNING: DFC is already on for "..aliveThreshold.."s! Shutting down...")
-            emergency()
-	    end
-    else
-        aliveTime = computer.uptime()
     end
 end
 
@@ -240,14 +255,14 @@ end
 -- loop loop loop loop
 
 while true do
-    time = getUnformattedTime()
     local _, _, username, message = event.pull(10, "chat_message") -- 100 or 10 seconds timeout? -> time check is only every 30 seconds
 
-    if allowedUsers[username] then
+    time = getUnformattedTime()
+    active = emitter.isActive()
+
+    if config.allowedUsers[username] then
         doAuthorizedShit(username, message)
     end
 
     checkTime()
-    checkCryogel()
-    checkAliveTime()
 end

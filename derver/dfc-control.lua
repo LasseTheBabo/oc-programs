@@ -4,9 +4,10 @@ local event = require("event")
 local internet = require("internet")
 local json = require("json")
 local sides = require("sides")
+local computer = require("computer")
 
-local redstone = component.redstone
-local tank = component.ntm_fluid_tank
+--local redstone = component.redstone
+--local tank = component.ntm_fluid_tank
 local emitter = component.dfc_emitter
 local chat = component.chat_box
 
@@ -26,7 +27,7 @@ chat.setName("DFC")
 local sirenSide = sides.top -- independent of direction
 local cryoShutdownThreshold = 0.9 -- cryogel level should even be under 90%
 local aliveTime = computer.uptime()
-local aliveThreshold = 60 -- time after dfc shuts down in seconds
+local aliveThreshold = 900 -- time after dfc shuts down in seconds
 local locked = false
 local active = false
 local last_active = false
@@ -51,17 +52,19 @@ local log_file = filesystem.open(log_path, "a")
 
 commands["on"] = function()
     if locked then
-        chat.say("DFC is still locked after server restart")
-        chat.say("use #dfc auth to unlock it")
+        chat.say("DFC is still locked")
+        chat.say("use #dfc unlock to unlock it")
     else
         chat.say("DFC on")
         active = true
+        aliveTime = computer.uptime()
     end
 end
 
 commands["off"] = function()
     chat.say("DFC off")
     active = false
+    aliveTime = computer.uptime()
 end
 
 commands["power"] = function(args)
@@ -84,7 +87,7 @@ commands["power"] = function(args)
     end
 end
 
-commands["auth"] = function()
+commands["unlock"] = function()
     if locked then
         locked = false
         chat.say("DFC is now unlocked")
@@ -160,7 +163,7 @@ function doAuthorizedShit(username, message)
             chat.say("#dfc off")
             chat.say("#dfc power")
             chat.say("#dfc power 100  <- only goes 1-100")
-            chat.say("#dfc auth")
+            chat.say("#dfc unlock")
             emitter.setActive(last_active)
         end
 
@@ -182,9 +185,9 @@ end
 
 local function siren(state)
     if state then
-        redstone.setOutput(sirenSide, 15)
+        --redstone.setOutput(sirenSide, 15)
     else
-        redstone.setOutput(sirenSide, 0)
+        --redstone.setOutput(sirenSide, 0)
     end
 end
 
@@ -202,13 +205,15 @@ local function checkTime()
     local hour, min = getTime()
 
     if hour % 4 == 0 and min < 10 then
-        log("WARNING: server restart")
-        emergency()
+        if not locked then
+            log("WARNING: server restart")
+            emergency()
+        end
     end
 end
 
 local function checkCryogel()
-    local max, stored = tank.getMaxStored(), tank.getFluidStored()
+    local max, stored = 1, 1--tank.getMaxStored(), tank.getFluidStored()
     local fillPercent = stored / max
     local toLow = fillPercent < cryoShutdownThreshold
 
@@ -221,10 +226,14 @@ local function checkCryogel()
 end
 
 local function checkAliveTime()
-    if (aliveTime) + aliveThreshold < computer.uptime() then
-	    aliveTime = computer.uptime()
-        log("WARNING: DFC is already on for "..aliveTime.."! Shutting down...")
-	end
+    if active then
+        if (aliveTime) + aliveThreshold < computer.uptime() then
+            log("WARNING: DFC is already on for "..aliveThreshold.."s! Shutting down...")
+            emergency()
+	    end
+    else
+        aliveTime = computer.uptime()
+    end
 end
 
 
@@ -232,7 +241,7 @@ end
 
 while true do
     time = getUnformattedTime()
-    local _, _, username, message = event.pull(100, "chat_message") -- 100 or 10 seconds timeout? -> time check is only every 30 seconds
+    local _, _, username, message = event.pull(10, "chat_message") -- 100 or 10 seconds timeout? -> time check is only every 30 seconds
 
     if allowedUsers[username] then
         doAuthorizedShit(username, message)

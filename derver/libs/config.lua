@@ -20,14 +20,14 @@ function config.mergeRecursive(t, from)
     end
 end
 
-function config.loadConfig(configPath)
+function config.loadConfig(configPath, cfg1)
     local h, r = io.open(configPath, "rb")
     if not h then return nil, "unable to open config: "..r end
     local data = h:read("*a")
     h:close()
-    local cfg, r = serialization.unserialize(data)
-    if not cfg then return nil, "unable to unserialize config: "..r end
-    return config.mergeRecursive(config, cfg)
+    local cfg2, r = serialization.unserialize(data)
+    if not cfg2 then return nil, "unable to unserialize config: "..r end
+    return config.mergeRecursive(cfg1, cfg2)
 end
 
 function config.resetConfig(configPath)
@@ -41,7 +41,7 @@ function config.resetConfig(configPath)
 end
 
 function config.load(configPath, config)
-    do local s, r = config.loadConfig(configPath)
+    do local s, r = config.loadConfig(configPath, config)
         if not s then
             print(r)
             print("using default config")

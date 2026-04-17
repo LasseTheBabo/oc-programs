@@ -193,7 +193,9 @@ commands["angry"] = function(args)
                 return
             else
                 if biometrics.contains(config.userBiometrics, playerId) then
-                    log("WARNING: DFC is now in angry state!")
+                    local msg = "WARNING: DFC is now in angry state!"
+                    log(msg)
+                    chat.say(msg)
                     angry = true
                 else
                     log("not enough permissions")
@@ -211,16 +213,16 @@ commands["angry"] = function(args)
 end
 
 commands["info"] = function()
-    chat.say("State:  "..emitter.isActive())
-    chat.say("Angry:  "..angry)
-    chat.say("Locked: "..locked)
-    chat.say("Power:  "..emitter.getInput())
+    chat.say("State:  "..tostring(emitter.isActive()))
+    chat.say("Angry:  "..tostring(angry))
+    chat.say("Locked: "..tostring(locked))
+    chat.say("Power:  "..tostring(emitter.getInput()))
 end
 
 commands["panic"] = function()
-    local message = "DFC AZ-5 was triggered"
-    emergency(message)
-    chat.say(message)
+    local msg = "DFC AZ-5 was triggered"
+    emergency(msg)
+    chat.say(msg)
 end
 
 local function doAuthorizedShit(username, message)

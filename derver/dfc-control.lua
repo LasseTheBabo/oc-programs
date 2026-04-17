@@ -193,7 +193,7 @@ commands["angry"] = function(args)
                 return
             else
                 if biometrics.contains(config.userBiometrics, playerId) then
-                    local msg = "WARNING: DFC is now in angry state!"
+                    local msg = "WARNING: DFC is now angry !"
                     log(msg)
                     chat.say(msg)
                     angry = true
@@ -207,6 +207,7 @@ commands["angry"] = function(args)
         if not angry then
             chat.say("DFC is already friendly")
         else
+            chat.say("DFC is now friendly")
             angry = false
         end
     end

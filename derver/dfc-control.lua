@@ -35,7 +35,14 @@ local config = {
     }
 }
 
-cfg.load(configPath, config)
+
+do local s, r = cfg.loadConfig(configPath, config)
+    if not s then
+        print(r)
+        print("using default config")
+    end
+end
+cfg.saveConfig(configPath, config)
 
 
 -- daingerus
@@ -96,6 +103,12 @@ local function checkTime()
     end
 end
 
+local function checkCryogel()
+    if emitter.getCryogel() < 60000 then
+        emergency("WARNING: cryogel low! check cryogel production")
+    end
+end
+
 
 -- helping shit
 
@@ -123,7 +136,7 @@ end
 commands["on"] = function()
     if locked then
         chat.say("DFC is still locked")
-        chat.say("use " .. config.commandPrefix " unlock to unlock it")
+        chat.say("use " .. config.commandPrefix .. " unlock to unlock it")
     else
         chat.say("DFC on")
         emitter.setActive(true)
@@ -164,6 +177,7 @@ commands["angry"] = function(args)
 
     if state == nil then
         chat.say(string.format("use \"%s angry [true or false]\" to set angry", config.commandPrefix))
+        return
     end
 
     if state then
@@ -174,6 +188,7 @@ commands["angry"] = function(args)
             local playerId = biometrics.readId()
 
             if not playerId then
+                log("failed biometric verification")
                 chat.say("couldn't scan your id")
                 return
             else
@@ -181,8 +196,8 @@ commands["angry"] = function(args)
                     log("WARNING: DFC is now in angry state!")
                     angry = true
                 else
+                    log("not enough permissions")
                     chat.say("you don't have enough permissions to do that")
-                    log("failed biometric verification")
                 end
             end
         end
@@ -195,8 +210,17 @@ commands["angry"] = function(args)
     end
 end
 
+commands["info"] = function()
+    chat.say("State:  "..emitter.isActive())
+    chat.say("Angry:  "..angry)
+    chat.say("Locked: "..locked)
+    chat.say("Power:  "..emitter.getInput())
+end
+
 commands["panic"] = function()
-    emergency("DFC AZ-5 was triggered")
+    local message = "DFC AZ-5 was triggered"
+    emergency(message)
+    chat.say(message)
 end
 
 local function doAuthorizedShit(username, message)
@@ -209,6 +233,8 @@ local function doAuthorizedShit(username, message)
         for i = 3, #parts do
             table.insert(args, parts[i])
         end
+
+        log(username .. ": " .. message)
 
         if commands[command] then
             commands[command](args)
@@ -226,8 +252,6 @@ local function doAuthorizedShit(username, message)
                 chat.say(config.commandPrefix .. " " .. key)
             end
         end
-
-        log(username .. ": " .. message)
     end
 end
 
@@ -241,28 +265,28 @@ if args then
 
     if arg == "list_players" then
         for i, id in ipairs(config.userBiometrics) do
-            print("%d. = %s", i, id)
+            print(string.format("%d. = %s", i, id))
         end
+        return
     elseif arg == "add_player" then
         local id = biometrics.readId()
         biometrics.addPlayer(config.userBiometrics, id);
         cfg.saveConfig(configPath, config)
+        return
     elseif arg == "remove_player" then
         local id = biometrics.readId()
         biometrics.removePlayer(config.userBiometrics, id);
         cfg.saveConfig(configPath, config)
+        return
     end
-
-    return
 end
 
 
 -- loop loop loop loop
 
 while true do
-    local _, _, username, message = event.pull(10, "chat_message")
-
     utcTime = time.getUnformattedTime()
+    local _, _, username, message = event.pull(10, "chat_message")
 
     if config.allowedUsers[username] then
         doAuthorizedShit(username, message)
@@ -270,4 +294,5 @@ while true do
 
     setAngry(angry)
     checkTime()
+    checkCryogel()
 end

@@ -1,6 +1,5 @@
 local component = require("component")
 local event = require("event")
-local reader = component.os_biometric
 
 local biometrics = {}
 

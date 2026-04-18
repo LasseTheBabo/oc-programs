@@ -6,6 +6,7 @@ local event = require("event")
 local tele = require("tele")
 local red = require("red") -- redstone
 local cfg = require("config")
+local gpu = component.gpu
 
 
 -- component config
@@ -22,8 +23,32 @@ local config = {
     port = 7000
 }
 
+local w, h = gpu.getResolution()
+local logList = {}
+local logX = 3
+local logY = 3
+local logLength = h - 4
+
+local function clear()
+    gpu.fill(1, 1, w, h, " ")
+end
+
+local function render()
+    clear()
+    gpu.set(2, 1, "q: quit")
+    gpu.fill(1, 2, w, 1, "-")
+
+    for i, line in ipairs(logList) do
+        gpu.set(logX, logY + i, line)
+    end
+end
+
 local function log(message)
-    print(message)
+    table.insert(logList, message)
+    if #logList > logLength then
+        table.remove(logList, 1)
+    end
+    render()
 end
 
 do
@@ -99,7 +124,8 @@ local function handleBackLog()
 end
 
 local function getStationList()
-    log("\navailable teleporter")
+    logList = {}
+    log("available teleporter")
     tele.query(connection, "get_list")
     stations = { tele.queryWait(connection, "list") }
     for i, station in ipairs(stations) do
@@ -213,3 +239,5 @@ end
 
 log("disconnecting")
 connection:close()
+os.sleep(0.1)
+clear()

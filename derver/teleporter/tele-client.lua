@@ -22,29 +22,26 @@ local config = {
     port = 7000
 }
 
+local function log(message)
+    print(message)
+end
+
 do
     local s, r = cfg.loadConfig(configPath, config)
     if not s then
-        print(r)
-        print("using default config")
+        log(r)
+        log("using default config")
     end
 end
 cfg.saveConfig(configPath, config)
 
 
-
+local busy = false
 local running = true
 local queryBackLog = {}
 local stations = {}
 local remoteStation
 local inbound = false
-
-
--- some helping shit
-
-local function log(message)
-    print(message)
-end
 
 
 -- connecting to server
@@ -81,17 +78,20 @@ local function handleBackLog()
 
         if command == "inbound" then
             if remoteStation then
-                tele.query(connection,"reject") -- reject inbound because something is still going on
+                tele.query(connection, "reject") -- reject inbound because something is still going on
             else
                 inbound = true
                 remoteStation = argument
             end
         elseif command == "cancel" then
             remoteStation = nil
-		elseif command == "bye" then
-		    running = false
-		    print("server shut down!")
-		    print(argument)
+        elseif command == "busy" then
+            log(argument)
+            busy = argument ~= "clear"
+        elseif command == "bye" then
+            running = false
+            log("server shut down!")
+            log("reason: " .. argument)
         end
 
         table.remove(queryBackLog, i)
@@ -122,34 +122,29 @@ local function handleSend()
     tele.query(connection, "request", remoteStation)
 
     -- phase 1
-    log("phase 1")
     red.pulseRedstone(rsSpatialIO)
     red.setRedstone(rsSend, 15)
     phase(1, false)
 
     -- phase 3
-    log("phase 3")
     phase(3, true)
-    print("3")
     while red.readRedstone(rsSpatialIO_read) ~= 0 do
         os.sleep(0.1)
     end
     red.setRedstone(rsSend, 0)
-    print("3-")
     phase(3, false)
 
     -- phase 5
-    log("phase 5")
     phase(5, true)
-    print("5")
     red.setRedstone(rsReceive, 15)
     while red.readRedstone(rsSpatialIO_read) == 0 do
         os.sleep(0.1)
     end
     red.setRedstone(rsReceive, 0)
-    print("5-")
     phase(5, false)
 
+    inbound = false
+    remoteStation = nil
     log("finished sending")
 end
 
@@ -157,27 +152,19 @@ local function handleReceive()
     log("incoming teleport...")
 
     -- phase 2
-    log("phase 2")
     phase(2, true)
-    print("2")
     red.pulseRedstone(rsSpatialIO)
     red.setRedstone(rsReceive, 15)
-    print("2-")
     phase(2, false)
 
     -- phase 4
-    log("phase 4")
     phase(4, true)
-    print("4")
     red.setRedstone(rsReceive, 0)
     red.setRedstone(rsSend, 15)
-    print("4-")
     phase(4, false)
 
     -- phase 6
-    log("phase 6")
     phase(6, true)
-    print("6")
     red.setRedstone(rsSend, 0)
     red.pulseRedstone(rsSpatialIO)
     red.setRedstone(rsSend, 15)
@@ -185,11 +172,10 @@ local function handleReceive()
     os.sleep(1)
     red.setRedstone(rsSend, 0)
     red.setRedstone(rsReceive, 0)
-    print("6-")
     phase(6, false)
 
     inbound = false
-    remoteStation = false
+    remoteStation = nil
     log("finished receiving")
 end
 
@@ -202,16 +188,20 @@ while running do
     local e, _, ch, co = event.pull(0.5, "key_down")
 
     if e == "key_down" then
-        local key = string.char(ch)
-        local choice = tonumber(key)
-        local station = stations[choice]
+        if not busy then
+            local key = string.char(ch)
+            local choice = tonumber(key)
+            local station = stations[choice]
 
-        if station then
-            remoteStation = station
-            handleSend()
-            getStationList()
-        elseif key == "q" then
-            running = false
+            if station then
+                remoteStation = station
+                handleSend()
+                getStationList()
+            elseif key == "q" then
+                running = false
+            end
+        else
+            log("server is still processing")
         end
     end
 

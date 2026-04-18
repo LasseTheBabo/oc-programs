@@ -17,8 +17,8 @@ local function doTeleShit()
     local sender, receiver = table.unpack(currentRequest)
 
     for i, c in ipairs(connections) do
-        if c~=sender and c~=receiver then
-            tele.query(c, "busy", "server is processing a teleport")
+        if c ~= sender and c ~= receiver then
+            tele.query(c, "busy")
         end
     end
 
@@ -43,6 +43,9 @@ local function doTeleShit()
     -- TODO: free other deles because of locking shit
 
     currentRequest = nil
+    for _, c in ipairs(connections) do
+        tele.query(c, "busy", "clear")
+    end
 end
 
 local function handleMessage(connection, command, ...)
@@ -55,10 +58,16 @@ local function handleMessage(connection, command, ...)
             end
         end
 
-        if currentRequest then tele.query(connection, "cancel", "a request is in progress") return end
-        if not targetConnection then tele.query(connection, "cancel", "no station "..target) return end
+        if currentRequest then
+            tele.query(connection, "cancel", "a request is in progress")
+            return
+        end
+        if not targetConnection then
+            tele.query(connection, "cancel", "no station " .. target)
+            return
+        end
 
-        currentRequest = {connection, targetConnection}
+        currentRequest = { connection, targetConnection }
 
         doTeleShit()
     elseif command == "register" then
@@ -67,7 +76,9 @@ local function handleMessage(connection, command, ...)
         local stationNames = {}
 
         for i, c in ipairs(connections) do
-            table.insert(stationNames, c.name)
+            if c.name ~= connection.name then
+                table.insert(stationNames, c.name)
+            end
         end
 
         tele.query(connection, "list", table.unpack(stationNames))
@@ -90,10 +101,10 @@ local function runConnectionThread()
 
             -- keep index to not skip after remove
             if connection.state == "closed" then
-	            table.remove(connections, i)
-	        else
-	            i = i + 1
-	        end
+                table.remove(connections, i)
+            else
+                i = i + 1
+            end
         end
 
         os.sleep(0.2)
@@ -101,21 +112,21 @@ local function runConnectionThread()
 end
 
 function start()
-   connectionThread = thread.create(runConnectionThread)
-   connectionThread:detach()
-   connectionListener = minitel.flisten(port, function(s)
-				     table.insert(connections, s)
-   end)
+    connectionThread = thread.create(runConnectionThread)
+    connectionThread:detach()
+    connectionListener = minitel.flisten(port, function(s)
+        table.insert(connections, s)
+    end)
 end
 
 function stop(...)
-   local reason = table.concat({...}, " ")
-   if #reason == 0 then reason = "unspecified" end
-   for _, c in ipairs(connections) do
-      tele.query(c, "bye", reason)
-      c:close()
-   end
-   event.ignore("net_msg", connectionListener)
-   connectionThread:kill()
-   connectionThread = nil
+    local reason = table.concat({ ... }, " ")
+    if #reason == 0 then reason = "unspecified" end
+    for _, c in ipairs(connections) do
+        tele.query(c, "bye", reason)
+        c:close()
+    end
+    event.ignore("net_msg", connectionListener)
+    connectionThread:kill()
+    connectionThread = nil
 end

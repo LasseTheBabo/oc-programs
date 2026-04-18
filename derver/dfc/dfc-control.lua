@@ -16,8 +16,6 @@ local chat = component.chat_box
 -- some variables
 
 chat.setName("DFC")
-local server = "dfc-screen"
-local port = 7000
 local commandPrefix = "#dfc"
 local angrySide = sides.bottom
 local locked = false
@@ -50,7 +48,7 @@ end
 cfg.saveConfig(biometricsPath, biometrics)
 
 print("connecting to screen")
-local screen, r = minitel.open(server, port)
+local screen, r = minitel.open("dfc-screen", 7000)
 
 if not screen then
     print("unable to open connection: " .. r)

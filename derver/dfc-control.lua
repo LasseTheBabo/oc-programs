@@ -216,7 +216,7 @@ commands["angry"] = function(args)
 end
 
 commands["info"] = function()
-    chat.say("State:  "..tostring(emitter.isActive()))
+    chat.say("Active: "..tostring(emitter.isActive()))
     chat.say("Angry:  "..tostring(angry))
     chat.say("Locked: "..tostring(locked))
     chat.say("Power:  "..tostring(emitter.getInput()))

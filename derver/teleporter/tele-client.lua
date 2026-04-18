@@ -25,9 +25,7 @@ local config = {
 
 local w, h = gpu.getResolution()
 local logList = {}
-local logX = 3
-local logY = 3
-local logLength = h - 4
+local status = ""
 
 local function clear()
     gpu.fill(1, 1, w, h, " ")
@@ -36,27 +34,33 @@ end
 local function render()
     clear()
     gpu.set(2, 1, "q: quit")
-    gpu.fill(1, 2, w, 1, "-")
+    gpu.set(2, 2, "Status: " .. status)
+    gpu.fill(1, 3, w, 1, "-")
 
     for i, line in ipairs(logList) do
-        gpu.set(logX, logY + i, line)
+        gpu.set(2, 4 + i, line)
     end
+end
+
+local function setStatus(message)
+    status = message
+    render()
 end
 
 local function log(message)
     table.insert(logList, message)
-    if #logList > logLength then
+    if #logList > 10 then
         table.remove(logList, 1)
     end
     render()
 end
 
-do
-    local s, r = cfg.loadConfig(configPath, config)
-    if not s then
-        log(r)
-        log("using default config")
-    end
+
+local s, r = cfg.loadConfig(configPath, config)
+if not s then
+    log(r)
+    log("using default config")
+    os.sleep(1)
 end
 cfg.saveConfig(configPath, config)
 
@@ -75,16 +79,16 @@ red.setRedstone(rsReceive, 0)
 red.setRedstone(rsSend, 0)
 red.setRedstone(rsSpatialIO, 0)
 
-log("connecting to server...")
-log(config.server .. ":" .. config.port)
+setStatus("connecting to server...")
 local connection, r = minitel.open(config.server, config.port)
 
 if not connection then
+    logList = {}
     log("unable to open connection: " .. r)
     return
 end
 
-log("connection established")
+setStatus("connection established")
 
 
 -- BackLog handling for query traffic in the background
@@ -111,10 +115,15 @@ local function handleBackLog()
         elseif command == "cancel" then
             remoteStation = nil
         elseif command == "busy" then
-            log(argument)
             busy = argument ~= "clear"
+            if busy then
+                setStatus("server is busy")
+            else
+                render()
+            end
         elseif command == "bye" then
             running = false
+            logList = {}
             log("server shut down!")
             log("reason: " .. argument)
         end
@@ -123,14 +132,19 @@ local function handleBackLog()
     end
 end
 
+local counter = 0
 local function getStationList()
-    logList = {}
-    log("available teleporter")
-    tele.query(connection, "get_list")
-    stations = { tele.queryWait(connection, "list") }
-    for i, station in ipairs(stations) do
-        log(i .. " " .. station)
+    if counter % 10 == 0 then -- only do it every 10 cycles to not overload the server
+        tele.query(connection, "get_list")
+        stations = { tele.queryWait(connection, "list") }
+        logList = {}
+        log("available teleporter:")
+        for i, station in ipairs(stations) do
+            log(i .. ". " .. station)
+        end
     end
+
+    counter = counter + 1
 end
 
 local function phase(i, begin)
@@ -144,7 +158,7 @@ local function phase(i, begin)
 end
 
 local function handleSend()
-    log("teleporting...")
+    setStatus("teleporting...")
     tele.query(connection, "request", remoteStation)
 
     -- phase 1
@@ -171,11 +185,11 @@ local function handleSend()
 
     inbound = false
     remoteStation = nil
-    log("finished sending")
+    setStatus("finished sending")
 end
 
 local function handleReceive()
-    log("incoming teleport...")
+    setStatus("incoming teleport...")
 
     -- phase 2
     phase(2, true)
@@ -202,14 +216,14 @@ local function handleReceive()
 
     inbound = false
     remoteStation = nil
-    log("finished receiving")
+    setStatus("finished receiving")
 end
 
 tele.query(connection, "register", config.clientName)
-getStationList()
 while running do
     updateBackLog()
     handleBackLog()
+    getStationList()
 
     local e, _, ch, co = event.pull(0.5, "key_down")
 
@@ -222,22 +236,19 @@ while running do
             if station then
                 remoteStation = station
                 handleSend()
-                getStationList()
             elseif key == "q" then
                 running = false
             end
         else
-            log("server is still processing")
+            setStatus("server is still processing")
         end
     end
 
     if inbound and remoteStation then
         handleReceive()
-        getStationList()
     end
 end
 
-log("disconnecting")
 connection:close()
 os.sleep(0.1)
 clear()

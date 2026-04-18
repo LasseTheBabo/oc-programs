@@ -3,8 +3,10 @@ local filesystem = require("filesystem")
 local event = require("event")
 local sides = require("sides")
 local cfg = require("config")
-local biometrics = require("biometrics")
+local bio = require("biometrics")
 local time = require("time")
+local minitel = require("minitel")
+local tele = require("tele")
 
 local redstone = component.redstone
 local emitter = component.dfc_emitter
@@ -14,46 +16,56 @@ local chat = component.chat_box
 -- some variables
 
 chat.setName("DFC")
+local server = "dfc-screen"
+local port = 7000
+local commandPrefix = "#dfc"
+local angrySide = sides.bottom
 local locked = false
 local angry = false
 local utcTime
 local commands = {}
 
-local log_path = "/dfc_log.txt"
-local configPath = "/etc/dfc.cfg"
-
-local config = {
-    angrySide = sides.top,
-    commandPrefix = "#dfc",
-    userBiometrics = {},
-    allowedUsers = {
-        ["highPetya"] = true,
-        ["Kirby73"] = true,
-        ["LasseTheBabo"] = true, -- maintenance and testing
-        ["Val_MuMu"] = true,
-        ["Zaknafarin"] = true,
-        ["Alexmaster75"] = true,
-        ["RedstoneParkour"] = true
-    }
+local allowedUsers = {
+    ["Alexmaster75"] = true,
+    ["highPetya"] = true,
+    ["Kirby73"] = true,
+    ["LasseTheBabo"] = true, -- dfc admin
+    ["RedstoneParkour"] = true,
+    ["Val_MuMu"] = true,
+    ["Zaknafarin"] = true
 }
 
+local log_path = "/etc/dfc.log"
+local biometricsPath = "/etc/biometrics.txt"
+local biometrics = {}
 
-do local s, r = cfg.loadConfig(configPath, config)
+
+do
+    local s, r = cfg.loadConfig(biometricsPath, biometrics)
     if not s then
         print(r)
-        print("using default config")
+        print("creating empty biometrics file")
     end
 end
-cfg.saveConfig(configPath, config)
+cfg.saveConfig(biometricsPath, biometrics)
+
+print("connecting to screen")
+local screen, r = minitel.open(server, port)
+
+if not screen then
+    print("unable to open connection: " .. r)
+    return
+end
+print("connection established")
 
 
 -- daingerus
 
 local function setAngry(state)
     if state then
-        redstone.setOutput(config.angrySide, 15)
+        redstone.setOutput(angrySide, 15)
     else
-        redstone.setOutput(config.angrySide, 0)
+        redstone.setOutput(angrySide, 0)
     end
 end
 
@@ -79,6 +91,7 @@ local function log(message)
     )
     log_file:write(log_info .. "\n")
     print(log_info)
+    tele.query(screen, "log", log_info)
 end
 
 
@@ -138,7 +151,7 @@ end
 commands["on"] = function()
     if locked then
         chat.say("DFC is still locked")
-        chat.say("use " .. config.commandPrefix .. " unlock to unlock it")
+        chat.say("use " .. commandPrefix .. " unlock to unlock it")
     else
         chat.say("DFC on")
         emitter.setActive(true)
@@ -154,7 +167,7 @@ commands["power"] = function(args)
     local value = tonumber(args[1])
 
     if value == nil then
-        chat.say(string.format("use \"%s power [number]\" to set the power", config.commandPrefix))
+        chat.say(string.format("use \"%s power [number]\" to set the power", commandPrefix))
     else
         if value >= 1 and value <= 100 then
             chat.say("Power set to " .. value)
@@ -178,7 +191,7 @@ commands["angry"] = function(args)
     local state = toBool(args[1])
 
     if state == nil then
-        chat.say(string.format("use \"%s angry [true or false]\" to set angry", config.commandPrefix))
+        chat.say(string.format("use \"%s angry [true or false]\" to set angry", commandPrefix))
         return
     end
 
@@ -187,14 +200,14 @@ commands["angry"] = function(args)
             chat.say("DFC is already angry")
         else
             chat.say("verify your player id at the biometric scanner")
-            local playerId = biometrics.readId()
+            local playerId = bio.readId()
 
             if not playerId then
                 log("failed biometric verification")
                 chat.say("couldn't scan your id")
                 return
             else
-                if biometrics.contains(config.userBiometrics, playerId) then
+                if bio.contains(biometrics, playerId) then
                     local msg = "WARNING: DFC is now angry !"
                     log(msg)
                     chat.say(msg)
@@ -216,10 +229,10 @@ commands["angry"] = function(args)
 end
 
 commands["info"] = function()
-    chat.say("Active: "..tostring(emitter.isActive()))
-    chat.say("Angry:  "..tostring(angry))
-    chat.say("Locked: "..tostring(locked))
-    chat.say("Power:  "..tostring(emitter.getInput()))
+    chat.say("Active: " .. tostring(emitter.isActive()))
+    chat.say("Angry:  " .. tostring(angry))
+    chat.say("Locked: " .. tostring(locked))
+    chat.say("Power:  " .. tostring(emitter.getInput()))
 end
 
 commands["panic"] = function()
@@ -231,7 +244,7 @@ end
 local function doAuthorizedShit(username, message)
     local parts = split(message)
 
-    if parts[1] == config.commandPrefix then
+    if parts[1] == commandPrefix then
         local command = parts[2]
         local args = {}
 
@@ -254,7 +267,7 @@ local function doAuthorizedShit(username, message)
             table.sort(keys)
 
             for _, key in ipairs(keys) do
-                chat.say(config.commandPrefix .. " " .. key)
+                chat.say(commandPrefix .. " " .. key)
             end
         end
     end
@@ -269,19 +282,19 @@ if args then
     local arg = args[1]
 
     if arg == "list_players" then
-        for i, id in ipairs(config.userBiometrics) do
+        for i, id in ipairs(biometrics) do
             print(string.format("%d. = %s", i, id))
         end
         return
     elseif arg == "add_player" then
-        local id = biometrics.readId()
-        biometrics.addPlayer(config.userBiometrics, id);
-        cfg.saveConfig(configPath, config)
+        local id = bio.readId()
+        bio.addPlayer(biometrics, id);
+        cfg.saveConfig(biometricsPath, biometrics)
         return
     elseif arg == "remove_player" then
-        local id = biometrics.readId()
-        biometrics.removePlayer(config.userBiometrics, id);
-        cfg.saveConfig(configPath, config)
+        local id = bio.readId()
+        bio.removePlayer(biometrics, id);
+        cfg.saveConfig(biometricsPath, biometrics)
         return
     end
 end
@@ -293,7 +306,7 @@ while true do
     utcTime = time.getUnformattedTime()
     local _, _, username, message = event.pull(10, "chat_message")
 
-    if config.allowedUsers[username] then
+    if allowedUsers[username] then
         doAuthorizedShit(username, message)
     end
 

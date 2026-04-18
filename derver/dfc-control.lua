@@ -31,7 +31,9 @@ local config = {
         ["Kirby73"] = true,
         ["LasseTheBabo"] = true, -- maintenance and testing
         ["Val_MuMu"] = true,
-        ["Zaknafarin"] = true
+        ["Zaknafarin"] = true,
+        ["Alexmaster75"] = true,
+        ["RedstoneParkour"] = true
     }
 }
 

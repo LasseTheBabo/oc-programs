@@ -1,6 +1,7 @@
--- library for the deleporter
+local os = require("os")
+local tele = {}
 
-local function split(msg)
+function tele.split(msg)
    local ret = {}
    for x in msg:gmatch("[^\t]+") do
       table.insert(ret, x)
@@ -8,11 +9,11 @@ local function split(msg)
    return ret
 end
 
-local function query(connection, ...)
+function tele.query(connection, ...)
    connection:write(table.concat({...}, "\t").."\n")
 end
 
-local function queryWait(connection, ...)
+function tele.queryWait(connection, ...)
     while true do
         local response
 
@@ -21,7 +22,7 @@ local function queryWait(connection, ...)
             os.sleep(0.1)
         until response
 
-        local parts = split(response)
+        local parts = tele.split(response)
 
         for _, pattern in ipairs({...}) do
             local match = table.pack(response:match(pattern))
@@ -31,3 +32,5 @@ local function queryWait(connection, ...)
         end
     end
 end
+
+return tele

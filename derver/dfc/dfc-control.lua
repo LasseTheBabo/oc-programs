@@ -97,6 +97,7 @@ end
 
 local function emergency(message)
     if not locked then
+        chat.message(message)
         log(message)
         log("emergency shutdown!")
         locked = true
@@ -236,7 +237,6 @@ end
 commands["panic"] = function()
     local msg = "DFC AZ-5 was triggered"
     emergency(msg)
-    chat.say(msg)
 end
 
 local function doAuthorizedShit(username, message)

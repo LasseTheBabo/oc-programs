@@ -1,0 +1,15 @@
+{
+  shapes = {
+    [1] = {
+      [1] = 0,
+      [2] = 0,
+      [3] = 0,
+      [4] = 16,
+      [5] = 16,
+      [6] = 16,
+      texture = "hbm:ore_tektite_osmiridium"
+    }
+  },
+  label = "Osmiridium-Infused Tektite",
+  emitRedstone = false
+}

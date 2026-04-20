@@ -1,0 +1,15 @@
+{
+  emitRedstone = true,
+  shapes = {
+    [1] = {
+      [1] = 0,
+      [2] = 0,
+      [3] = 0,
+      [4] = 16,
+      [5] = 16,
+      [6] = 16,
+      texture = "appliedenergistics2:Transparent"
+    }
+  },
+  label = " "
+}

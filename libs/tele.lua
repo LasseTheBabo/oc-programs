@@ -25,8 +25,7 @@ function tele.queryWait(connection, ...)
         local parts = tele.split(response)
 
         for _, pattern in ipairs({...}) do
-            local match = table.pack(response:match(pattern))
-            if parts[1] == pattern then
+            if response:match(pattern) then
                 return table.unpack(parts, 2) -- 2 because only return message -> {command, message}
             end
         end

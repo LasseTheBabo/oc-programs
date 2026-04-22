@@ -1,16 +1,17 @@
 local component = require("component")
-local sides = require("sides")
-local os = require("os")
-local minitel = require("minitel")
 local event = require("event")
-local tele = require("tele")
-local red = require("red") -- redstone
+local os = require("os")
+local sides = require("sides")
+
 local cfg = require("config")
-local gpu = component.gpu
+local minitel = require("minitel")
+local red = require("red") -- redstone
+local tele = require("tele")
 
 
 -- component config
 
+local gpu = component.gpu
 local rsReceive = sides.east
 local rsSend = sides.top
 local rsSpatialIO = sides.north

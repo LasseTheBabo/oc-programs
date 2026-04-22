@@ -1,7 +1,7 @@
 local event = require("event")
-local minitel = require("minitel")
 local thread = require("thread")
-local computer = require("computer")
+
+local minitel = require("minitel")
 local tele = require("tele")
 
 local port = 7000

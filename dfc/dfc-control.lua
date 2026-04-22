@@ -1,12 +1,13 @@
 local component = require("component")
-local filesystem = require("filesystem")
 local event = require("event")
+local filesystem = require("filesystem")
 local sides = require("sides")
-local cfg = require("config")
+
 local bio = require("biometrics")
-local time = require("time")
+local cfg = require("config")
 local minitel = require("minitel")
 local tele = require("tele")
+local time = require("time")
 
 local redstone = component.redstone
 local emitter = component.dfc_emitter

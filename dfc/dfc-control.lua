@@ -53,8 +53,9 @@ local screen, r = minitel.open("dfc-screen", 7000)
 
 if not screen then
     print("unable to open connection: " .. r)
+else
+    print("connection established")
 end
-print("connection established")
 
 
 -- daingerus

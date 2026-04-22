@@ -97,7 +97,7 @@ end
 -- security checks
 
 local function emergency(message)
-    if not locked then
+    if emitter.isActive() then
         chat.say(message)
         log(message)
         log("emergency shutdown!")

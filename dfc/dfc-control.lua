@@ -112,14 +112,16 @@ local function log(message)
     )
     log_file:write(log_info .. "\n")
     print(log_info)
-    tele.query(screen, "log", log_info)
+    if screen then
+        tele.query(screen, "log", log_info)
+    end
 end
 
 
 -- security checks
 
 local function emergency(message)
-    if emitter.isActive() then
+    if not locked then
         chat.say(message)
         log(message)
         log("emergency shutdown!")

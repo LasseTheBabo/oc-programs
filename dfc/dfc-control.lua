@@ -14,6 +14,28 @@ local emitter = component.dfc_emitter
 local chat = component.chat_box
 
 
+-- damn this is unoptimised
+
+if not redstone then
+    print("This program needs a Redstone I/O")
+    return
+end
+
+if not emitter then
+    print("This program needs a DFC Emitter")
+    return
+end
+
+if not chat then
+    print("This program needs a Chat Box")
+    return
+end
+
+if not component.os_biometric then
+    print("This program needs a Biometric Reader")
+    return
+end
+
 -- some variables
 
 chat.setName("DFC")

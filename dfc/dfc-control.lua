@@ -9,24 +9,20 @@ local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
 
-local redstone = component.redstone
-local emitter = component.dfc_emitter
-local chat = component.chat_box
-
 
 -- damn this is unoptimised
 
-if not redstone then
+if not component.redstone then
     print("This program needs a Redstone I/O")
     return
 end
 
-if not emitter then
+if not component.emitter then
     print("This program needs a DFC Emitter")
     return
 end
 
-if not chat then
+if not component.chat then
     print("This program needs a Chat Box")
     return
 end
@@ -35,6 +31,10 @@ if not component.os_biometric then
     print("This program needs a Biometric Reader")
     return
 end
+
+local redstone = component.redstone
+local emitter = component.dfc_emitter
+local chat = component.chat_box
 
 -- some variables
 

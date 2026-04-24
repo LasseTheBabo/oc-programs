@@ -1,9 +1,9 @@
-local tui = require("tui")
+local event = require("event")
 
-local events = {
-    touch = {
-        
-    }
-}
+local user = ""
+local password = ""
 
-tui.runLoop(events)
+
+
+while true do
+end

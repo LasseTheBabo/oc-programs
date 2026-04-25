@@ -44,9 +44,8 @@ commands["auth"] = function(c, ...)
     c.auth = true
 end
 
-commands["debug"] = function(c)
+commands["get_list"] = function(c)
     if c.auth then
-        sendStatus(c, status.ok)
         tele.query(c, "text", "fuck you")
     else
         sendStatus(c, status.forbidden)

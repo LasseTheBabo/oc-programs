@@ -1,9 +1,10 @@
 local component = require("component")
 local event = require("event")
-local os = require("os")
 local term = require("term")
 
 local anim = require("animations")
+local minitel = require("minitel")
+local tele = require("tele")
 
 local gpu = component.gpu
 local width, height = gpu.getResolution()
@@ -24,6 +25,38 @@ local loginY = math.floor(height / 2 - loginHeight / 2) + 1
 local umbrella = anim.smallUmbrella
 local umbrellaX = 10
 local umbrellaY = height / 2 - #umbrella[1] / 2
+
+local status = {
+    ok = 200,
+    badRequest = 400,
+    unauthorized = 401,
+    forbidden = 403,
+    notFound = 404
+}
+
+-- connecting to dashboard server
+
+term.clear()
+print("connecting to dashboard server...")
+local connection, r = minitel.open("dashboard-server", 7000)
+
+if not connection then
+    print("unable to open connection: " .. r)
+    return
+end
+
+print("connection established")
+
+local function query(...)
+    tele.query(connection, ...)
+end
+
+local function queryWait(...)
+    return tele.queryWait(connection, ...)
+end
+
+
+-- login shit
 
 local function drawAnimation(x, y, image, f)
     local frame = image[(f % #image) + 1]
@@ -74,12 +107,13 @@ end
 
 local inputX = loginX + loginWidth - inputLength - 1
 local usernameField = createInput("username", inputX, loginY + 1, inputLength)
+selectedField = usernameField -- autofocus because why not
 local passwordField = createInput("password", inputX, loginY + 3, inputLength)
 passwordField.password = true
 
 local function drawLoginForm(x, y, w, h)
     gpu.setForeground(0xFF0000)
-    gpu.set(x + w/2 - #errorMessage/2, y + 6, errorMessage)
+    gpu.set(x + w / 2 - #errorMessage / 2, y + 6, errorMessage)
 
     gpu.setBackground(loginBg)
     gpu.setForeground(loginFg)
@@ -87,7 +121,6 @@ local function drawLoginForm(x, y, w, h)
 
     gpu.set(x + 6, y + 1, "USER")
     gpu.set(x + 2, y + 3, "PASSWORD")
-
 
     usernameField:draw()
     passwordField:draw()
@@ -105,28 +138,45 @@ local function submit()
         return false
     end
 
-    return true
+    query("auth", usernameField.value, passwordField.value)
+
+    local code = tonumber(queryWait("status"))
+    if code == status.ok then return true end
+
+    errorMessage = "wrong username or password"
+    return false
 end
 
 local events = {
     key_down = function(ch)
-        -- 13 ENTER
         -- 8 BACK
+        -- 9 TAB
+        -- 13 ENTER
 
         if selectedField then
             local tmp = selectedField.value -- tmp is shorter than the other shit
+            local changed = false
+
             if ch > 31 and ch < 127 then
                 tmp = tmp .. string.char(ch)
+                changed = true
             elseif ch == 8 then
                 if #tmp > 0 then
                     tmp = tmp:sub(1, #tmp - 1)
+                    changed = true
+                end
+            elseif ch == 9 then
+                if selectedField == usernameField then
+                    selectedField = passwordField
+                else
+                    selectedField = usernameField
                 end
             elseif ch == 13 then
-                if submit() then 
+                if submit() then
                     running = false
                 end
             end
-            selectedField.value = tmp
+            if changed then selectedField.value = tmp end
         end
     end,
 
@@ -140,26 +190,35 @@ local events = {
     end
 }
 
-local i = 0
-while running do
-    local id, _, a, b = event.pullFiltered(0.2, function(e) return events[e] ~= nil end)
+local function login()
+    local i = 0
+    while running do
+        local id, _, a, b = event.pullFiltered(0.2, function(e) return events[e] ~= nil end)
 
-    gpu.setBackground(0x000000)
-    gpu.setForeground(0xFFFFFF)
-    term.clear()
+        gpu.setBackground(0x000000)
+        gpu.setForeground(0xFFFFFF)
+        term.clear()
 
-    drawAnimation(umbrellaX, umbrellaY, umbrella, i % (#umbrella * 2))
-    gpu.set(umbrellaX + 3, umbrellaY + #umbrella[1] + 2, "Umbrella corp.")
-    gpu.set(umbrellaX - 4, umbrellaY + #umbrella[1] + 4, "\"OUR BUSINESS IS LIFE ITSELF\"")
-    i = i + 1
+        drawAnimation(umbrellaX, umbrellaY, umbrella, i % (#umbrella * 2))
+        gpu.set(umbrellaX + 3, umbrellaY + #umbrella[1] + 2, "Umbrella corp.")
+        gpu.set(umbrellaX - 4, umbrellaY + #umbrella[1] + 4, "\"OUR BUSINESS IS LIFE ITSELF\"")
+        i = i + 1
 
-    drawLoginForm(loginX, loginY, loginWidth, loginHeight)
-    
-    if events[id] then events[id](a, b) end
+        drawLoginForm(loginX, loginY, loginWidth, loginHeight)
+
+        if events[id] then events[id](a, b) end
+    end
+
+    return { usernameField.value, passwordField.value }
 end
+
+login()
 
 gpu.setBackground(0x000000)
 gpu.setForeground(0xFFFFFF)
 term.clear()
-print("username: " .. usernameField.value)
-print("password: " .. passwordField.value)
+print("ok")
+
+query("debug")
+print(queryWait("status"))
+print(queryWait("text"))

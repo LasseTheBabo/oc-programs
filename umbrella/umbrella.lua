@@ -160,7 +160,7 @@ local events = {
 
             if ch > 31 and ch < 127 then
                 tmp = tmp .. string.char(ch)
-                changed = true
+                changed = #tmp < (selectedField.w - 1)
             elseif ch == 8 then
                 if #tmp > 0 then
                     tmp = tmp:sub(1, #tmp - 1)
@@ -198,7 +198,6 @@ local function login()
 
         gpu.setBackground(0x000000)
         gpu.setForeground(0xFFFFFF)
-        term.clear()
 
         drawAnimation(umbrellaX, umbrellaY, umbrella, i % (#umbrella * 2))
         gpu.set(umbrellaX + 3, umbrellaY + #umbrella[1] + 2, "Umbrella corp.")
@@ -213,6 +212,7 @@ local function login()
     return { usernameField.value, passwordField.value }
 end
 
+term.clear()
 login()
 
 gpu.setBackground(0x000000)

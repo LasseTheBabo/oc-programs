@@ -25,25 +25,6 @@ local angryRequest = false
 local log_path = "/etc/dfc.log"
 
 
-chatCmd.allowedUsers = {
-    ["Alexmaster75"] = true,
-    ["LasseTheBabo"] = true,
-    ["RedstoneParkour"] = true,
-    ["Val_MuMu"] = true,
-}
-
-chatCmd.deniedUsers = {
-    
-}
-
-chatCmd.denyMessage = "fuck you"
-
-local angryUsers = {
-    ["LasseTheBabo"] = true,
-    ["Val_MuMu"] = true,
-}
-
-
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
 
@@ -53,28 +34,11 @@ else
     print("connection established")
 end
 
-
--- daingerus
-
-local function setAngry(state)
-    if state then
-        redstone.setOutput(angrySide, 15)
-    else
-        redstone.setOutput(angrySide, 0)
-    end
-end
-
-
--- file stuff
-
 if not filesystem.exists(log_path) then
     local handle = filesystem.open(log_path, "w")
     handle:close()
 end
 local log_file = filesystem.open(log_path, "a")
-
-
--- palantir
 
 function chatCmd.log(message)
     local year, month, day = time.getDate(utcTime)
@@ -90,8 +54,33 @@ function chatCmd.log(message)
     end
 end
 
+chatCmd.allowedUsers = {
+    ["Alexmaster75"] = true,
+    ["LasseTheBabo"] = true,
+    ["RedstoneParkour"] = true,
+    ["Val_MuMu"] = true,
+}
 
--- security checks
+local angryUsers = {
+    ["LasseTheBabo"] = true,
+    ["Val_MuMu"] = true,
+}
+
+chatCmd.deniedUsers = {
+    ["Mrtoaster_12"] = true,
+    ["Zaknafarin"] = true,
+}
+
+chatCmd.denyMessage = "fuck nah you won't turn on this shitbox"
+
+
+local function setAngry(state)
+    if state then
+        redstone.setOutput(angrySide, 15)
+    else
+        redstone.setOutput(angrySide, 0)
+    end
+end
 
 local function emergency(message)
     if not locked then
@@ -120,6 +109,7 @@ local function toBool(state)
         return nil
     end
 end
+
 
 chatCmd.commands = {
     [commandPrefix] = {
@@ -207,7 +197,7 @@ chatCmd.commands = {
             chat.say("Locked: " .. tostring(locked))
             chat.say("Power:  " .. tostring(emitter.getInput()))
         end,
-        
+
         ["panic"] = function()
             emergency("DFC AZ-5 was triggered")
         end

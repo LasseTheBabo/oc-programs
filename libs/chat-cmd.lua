@@ -9,18 +9,12 @@ local chatCmd = {}
 chatCmd.chat = component.chat_box
 chatCmd.utcTime = ""
 chatCmd.commands = {}
-chatCmd.loopCheck = function() end
+chatCmd.loopCheck = nil
 chatCmd.allowedUsers = {}
-
-function chatCmd.log(message)
-    local year, month, day = time.getDate(chatCmd.utcTime)
-    local hour, min, sec = time.getTime(chatCmd.utcTime)
-    local log_info = string.format(
-        "%02d:%02d:%02d %02d.%02d.%04d > %s",
-        hour, min, sec, day, month, year, message
-    )
-    print(log_info)
-end
+chatCmd.deniedUsers = {}
+chatCmd.denyMessage = "access denied"
+chatCmd.lastUser = ""
+chatCmd.log = nil
 
 local function split(input)
     local result = {}
@@ -57,9 +51,12 @@ function chatCmd.runLoop()
     while true do
         chatCmd.utcTime = time.getUnformattedTime()
         local _, _, username, message = event.pull(10, "chat_message")
+        chatCmd.lastUser = username
 
         if chatCmd.allowedUsers[username] then
             doAuthorizedShit(username, message)
+        elseif chatCmd.deniedUsers[username] then
+            chatCmd.chat.say(chatCmd.denyMessage)
         end
 
         chatCmd.loopCheck()

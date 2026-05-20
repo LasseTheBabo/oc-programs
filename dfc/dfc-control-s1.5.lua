@@ -3,33 +3,46 @@ local event = require("event")
 local filesystem = require("filesystem")
 local sides = require("sides")
 
+local chatCmd = require("chat-cmd")
 local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
 
 local redstone = component.redstone
 local emitter = component.dfc_emitter
-local chat = component.chat_box
+local chat = chatCmd.chat
 
 
 -- some variables
 
 chat.setName("DFC")
-local commandPrefix = "#dfc"
 local angrySide = sides.bottom
 local locked = false
 local angry = false
 local utcTime
-local commands = {}
+local commandPrefix = "#dfc"
+local angryRequest = false
+local log_path = "/etc/dfc.log"
 
-local allowedUsers = {
+
+chatCmd.allowedUsers = {
     ["Alexmaster75"] = true,
     ["LasseTheBabo"] = true,
     ["RedstoneParkour"] = true,
     ["Val_MuMu"] = true,
 }
 
-local log_path = "/etc/dfc.log"
+chatCmd.deniedUsers = {
+    
+}
+
+chatCmd.denyMessage = "fuck you"
+
+local angryUsers = {
+    ["LasseTheBabo"] = true,
+    ["Val_MuMu"] = true,
+}
+
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
@@ -58,13 +71,12 @@ if not filesystem.exists(log_path) then
     local handle = filesystem.open(log_path, "w")
     handle:close()
 end
-
 local log_file = filesystem.open(log_path, "a")
 
 
 -- palantir
 
-local function log(message)
+function chatCmd.log(message)
     local year, month, day = time.getDate(utcTime)
     local hour, min, sec = time.getTime(utcTime)
     local log_info = string.format(
@@ -84,8 +96,8 @@ end
 local function emergency(message)
     if not locked then
         chat.say(message)
-        log(message)
-        log("emergency shutdown!")
+        chatCmd.log(message)
+        chatCmd.log("emergency shutdown!")
         locked = true
         angry = false
         emitter.setActive(false)
@@ -99,17 +111,6 @@ local function checkCryogel()
     end
 end
 
-
--- helping shit
-
-local function split(input)
-    local result = {}
-    for word in input:gmatch("%S+") do
-        table.insert(result, word)
-    end
-    return result
-end
-
 local function toBool(state)
     if state == "true" then
         return true
@@ -120,143 +121,102 @@ local function toBool(state)
     end
 end
 
-
--- commands
-
-commands["on"] = function()
-    if locked then
-        chat.say("DFC is still locked")
-        chat.say("use " .. commandPrefix .. " unlock to unlock it")
-    else
-        chat.say("DFC on")
-        emitter.setActive(true)
-    end
-end
-
-commands["off"] = function()
-    chat.say("DFC off")
-    emitter.setActive(false)
-end
-
-commands["power"] = function(args)
-    local value = tonumber(args[1])
-
-    if value == nil then
-        chat.say(string.format("use \"%s power [number]\" to set the power", commandPrefix))
-    else
-        if value >= 1 and value <= 100 then
-            chat.say("Power set to " .. value)
-            emitter.setInput(value)
-        else
-            chat.say("power must be between 0 and 100")
-        end
-    end
-end
-
-commands["unlock"] = function()
-    if locked then
-        locked = false
-        chat.say("DFC is now unlocked")
-    else
-        chat.say("DFC is already unlocked")
-    end
-end
-
-commands["angry"] = function(args)
-    local state = toBool(args[1])
-
-    if state == nil then
-        chat.say(string.format("use \"%s angry [true or false]\" to set angry", commandPrefix))
-        return
-    end
-
-    if state then
-        if angry then
-            chat.say("DFC is already angry")
-        else
-            chat.say("verify your player id at the biometric scanner")
-            local playerId = bio.readId()
-
-            if not playerId then
-                log("failed biometric verification")
-                chat.say("couldn't scan your id")
-                return
+chatCmd.commands = {
+    [commandPrefix] = {
+        ["on"] = function()
+            if locked then
+                chat.say("DFC is still locked")
+                chat.say("use " .. commandPrefix .. " unlock to unlock it")
             else
-                if bio.contains(biometrics, playerId) then
-                    local msg = "WARNING: DFC is now angry !"
-                    log(msg)
-                    chat.say(msg)
-                    angry = true
+                chat.say("DFC on")
+                emitter.setActive(true)
+            end
+        end,
+
+        ["off"] = function()
+            chat.say("DFC off")
+            emitter.setActive(false)
+        end,
+
+        ["power"] = function(args)
+            local value = tonumber(args[1])
+
+            if value == nil then
+                chat.say(string.format("use \"%s power [number]\" to set the power", commandPrefix))
+            else
+                if value >= 1 and value <= 100 then
+                    chat.say("Power set to " .. value)
+                    emitter.setInput(value)
                 else
-                    log("not enough permissions")
-                    chat.say("you don't have enough permissions to do that")
+                    chat.say("power must be between 0 and 100")
                 end
             end
-        end
-    else
-        if not angry then
-            chat.say("DFC is already friendly")
-        else
-            chat.say("DFC is now friendly")
-            angry = false
-        end
-    end
-end
+        end,
 
-commands["info"] = function()
-    chat.say("Active: " .. tostring(emitter.isActive()))
-    chat.say("Angry:  " .. tostring(angry))
-    chat.say("Locked: " .. tostring(locked))
-    chat.say("Power:  " .. tostring(emitter.getInput()))
-end
-
-commands["panic"] = function()
-    emergency("DFC AZ-5 was triggered")
-end
-
-local function doAuthorizedShit(username, message)
-    local parts = split(message)
-
-    if parts[1] == commandPrefix then
-        local command = parts[2]
-        local args = {}
-
-        for i = 3, #parts do
-            table.insert(args, parts[i])
-        end
-
-        log(username .. ": " .. message)
-
-        if commands[command] then
-            commands[command](args)
-        else
-            chat.say("Unknown command :(")
-            chat.say("Here are some commands:")
-
-            local keys = {}
-            for key in pairs(commands) do
-                table.insert(keys, key)
+        ["unlock"] = function()
+            if locked then
+                locked = false
+                chat.say("DFC is now unlocked")
+            else
+                chat.say("DFC is already unlocked")
             end
-            table.sort(keys)
+        end,
 
-            for _, key in ipairs(keys) do
-                chat.say(commandPrefix .. " " .. key)
+        ["angry"] = function(args)
+            local state = toBool(args[1])
+
+            if state == nil then
+                chat.say(string.format("use \"%s angry [true or false]\" to set angry", commandPrefix))
+                return
             end
+
+            if state then
+                if angry then
+                    chat.say("DFC is already angry")
+                else
+                    chat.say(string.format("accept the angry request with \"%s\"", commandPrefix))
+                    angryRequest = true
+                end
+            else
+                if not angry then
+                    chat.say("DFC is already friendly")
+                else
+                    chat.say("DFC is now friendly")
+                    angry = false
+                end
+            end
+        end,
+
+        ["accept"] = function()
+            if angryRequest and angryUsers[chatCmd.lastUser] then
+                local msg = "WARNING: DFC is now angry !"
+                chatCmd.log(msg)
+                chat.say(msg)
+                angry = true
+            else
+                chatCmd.log("not enough permissions")
+                chat.say("you don't have enough permissions to do that")
+            end
+
+            angryRequest = false
+        end,
+
+        ["info"] = function()
+            chat.say("Active: " .. tostring(emitter.isActive()))
+            chat.say("Angry:  " .. tostring(angry))
+            chat.say("Locked: " .. tostring(locked))
+            chat.say("Power:  " .. tostring(emitter.getInput()))
+        end,
+        
+        ["panic"] = function()
+            emergency("DFC AZ-5 was triggered")
         end
-    end
-end
+    }
+}
 
-
--- loop loop loop loop
-
-while true do
-    utcTime = time.getUnformattedTime()
-    local _, _, username, message = event.pull(10, "chat_message")
-
-    if allowedUsers[username] then
-        doAuthorizedShit(username, message)
-    end
-
+function chatCmd.loopCheck()
     setAngry(angry)
     checkCryogel()
 end
+
+chatCmd.runLoop()

@@ -5,7 +5,7 @@
 - Chat Box (Computronics)
 - Biometric Reader (OpenSecurity) only required for s1 core
 
-## S1.5 usage
+## chat commands
 - `#dfc on` enable the DFC if it isn't locked
 - `#dfc off` disables the DFC
 - `#dfc power` sets the emitter power to a value between 1-100

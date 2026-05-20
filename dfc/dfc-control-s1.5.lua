@@ -40,6 +40,7 @@ if not filesystem.exists(log_path) then
 end
 local log_file = filesystem.open(log_path, "a")
 
+
 function chatCmd.log(message)
     local year, month, day = time.getDate(utcTime)
     local hour, min, sec = time.getTime(utcTime)
@@ -53,6 +54,7 @@ function chatCmd.log(message)
         tele.query(screen, "log", log_info)
     end
 end
+
 
 chatCmd.allowedUsers = {
     ["Alexmaster75"] = true,
@@ -74,14 +76,6 @@ chatCmd.deniedUsers = {
 chatCmd.denyMessage = "fuck nah you won't turn on this shitbox"
 
 
-local function setAngry(state)
-    if state then
-        redstone.setOutput(angrySide, 15)
-    else
-        redstone.setOutput(angrySide, 0)
-    end
-end
-
 local function emergency(message)
     if not locked then
         chat.say(message)
@@ -91,12 +85,6 @@ local function emergency(message)
         angry = false
         emitter.setActive(false)
         emitter.setInput(1) -- set power to 1 because idk dont set the power to high
-    end
-end
-
-local function checkCryogel()
-    if emitter.getCryogel() < 60000 then
-        emergency("WARNING: cryogel low! check cryogel production")
     end
 end
 
@@ -205,8 +193,17 @@ chatCmd.commands = {
 }
 
 function chatCmd.loopCheck()
-    setAngry(angry)
-    checkCryogel()
+    -- set angry state
+    if angry then
+        redstone.setOutput(angrySide, 15)
+    else
+        redstone.setOutput(angrySide, 0)
+    end
+
+    -- check cryogel
+    if emitter.getCryogel() < 60000 then
+        emergency("WARNING: cryogel low! check cryogel production")
+    end
 end
 
 chatCmd.runLoop()

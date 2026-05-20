@@ -1,5 +1,5 @@
 local component = require("component")
-local event = require("event")
+local computer = require("computer")
 local filesystem = require("filesystem")
 local sides = require("sides")
 
@@ -23,7 +23,7 @@ local utcTime
 local commandPrefix = "#dfc"
 local angryRequest = false
 local log_path = "/etc/dfc.log"
-
+local lastAngryCheck = 0
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
@@ -54,7 +54,6 @@ function chatCmd.log(message)
         tele.query(screen, "log", log_info)
     end
 end
-
 
 chatCmd.allowedUsers = {
     ["Alexmaster75"] = true,
@@ -203,6 +202,17 @@ function chatCmd.loopCheck()
     -- check cryogel
     if emitter.getCryogel() < 60000 then
         emergency("WARNING: cryogel low! check cryogel production")
+    end
+
+    -- check angry time
+
+    if angry then
+        if (lastAngryCheck or 0) + 60 < computer.uptime() then
+            lastAngryCheck = computer.uptime()
+            emergency("WARNING: angry mode was active for 60 seconds!")
+        end
+    else
+        lastAngryCheck = computer.uptime()
     end
 end
 

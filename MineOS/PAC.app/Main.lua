@@ -11,7 +11,7 @@ local bscco = component.proxy("a9065e44-5d88-4dfd-a441-74a81a681920")
 local limit = {
     gold = {
         lower = 0,
-      upper = 2200,
+        upper = 2200,
     },
     nbti = {
         lower = 1500,
@@ -25,15 +25,15 @@ local limit = {
 
 local targets = {
     -- { name = 'nugget', momentum = 100 },
-    { name = 'Antimatter', momentum = 300 },
-    { name = 'Antischrabidium', momentum = 400 },
-    { name = 'Muon', momentum = 2500 },
-    { name = 'Tachyon', momentum = 5000 },
-    { name = 'Higgs Boson', momentum = 6500 },
-    { name = 'Dark Matter', momentum = 10000 },
-    { name = 'Strange Quark', momentum = 12500 },
-    { name = 'Sparkticle', momentum = 12500 },
-    { name = 'The Digamma Particle', momentum = 70000},
+    { name = 'Antimatter',           momentum = 300 },
+    { name = 'Antischrabidium',      momentum = 400 },
+    { name = 'Muon',                 momentum = 2500 },
+    { name = 'Tachyon',              momentum = 5000 },
+    { name = 'Higgs Boson',          momentum = 6500 },
+    { name = 'Dark Matter',          momentum = 10000 },
+    { name = 'Strange Quark',        momentum = 12500 },
+    { name = 'Sparkticle',           momentum = 12500 },
+    { name = 'The Digamma Particle', momentum = 70000 },
 }
 
 local COLORS = {
@@ -51,7 +51,7 @@ local function setDipoles()
 
     for address in addresses do
         local dipole = component.proxy(address)
-        for i=1,3 do
+        for i = 1, 3 do
             if dipole.getThreshold() == i then
                 dipoles[i] = dipole.address
             end
@@ -96,7 +96,7 @@ layout:setAlignment(1, 1, GUI.ALIGNMENT_HORIZONTAL_CENTER, GUI.ALIGNMENT_VERTICA
 layout:setMargin(1, 1, 0, 1)
 
 local function init()
-    --setDipoles()
+    setDipoles()
 
     for _, particle in ipairs(targets) do
         local button = newButton(layout.width - 4, 3, particle.name)

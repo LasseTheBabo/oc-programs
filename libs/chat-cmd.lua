@@ -53,10 +53,12 @@ function chatCmd.runLoop()
         local _, _, username, message = event.pull(10, "chat_message")
         chatCmd.lastUser = username
 
-        if chatCmd.allowedUsers[username] then
-            doAuthorizedShit(username, message)
-        elseif chatCmd.deniedUsers[username] then
+        if chatCmd.deniedUsers[username] then
             chatCmd.chat.say(chatCmd.denyMessage)
+        else
+            if chatCmd.allowedUsers[username] then
+                doAuthorizedShit(username, message)
+            end
         end
 
         chatCmd.loopCheck()

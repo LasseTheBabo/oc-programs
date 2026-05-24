@@ -11,6 +11,6 @@
 - `#dfc power` sets the emitter power to a value between 1-100
 - `#dfc unlock` unlocks the DFC after an emergency
 - `#dfc angry true/false` enables/disables the second core. `true` must be accepted with ´#dfc accept´
-- `#dfc accept` accepts the angry request. Player must be in the `allowedUsers` list
+- `#dfc confirm` confirms the angry request. Player must be in the `allowedUsers` list
 - `#dfc info` gives information about the DFC: active, angry, locked and emitter power
 - `#dfc panic` turns off the DFC, locks it and sets angry to false

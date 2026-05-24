@@ -16,10 +16,9 @@ local chat = chatCmd.chat
 -- some variables
 
 chat.setName("DFC")
-local angrySide = sides.bottom
+local angrySide = sides.top
 local locked = false
 local angry = false
-local utcTime
 local commandPrefix = "#dfc"
 local angryRequest = false
 local log_path = "/etc/dfc.log"
@@ -42,11 +41,11 @@ local log_file = filesystem.open(log_path, "a")
 
 
 function chatCmd.log(message)
-    local year, month, day = time.getDate(utcTime)
-    local hour, min, sec = time.getTime(utcTime)
+    local year, month, day = time.getDate(chatCmd.utcTime)
+    local hour, min, sec = time.getTime(chatCmd.utcTime)
     local log_info = string.format(
         "%02d:%02d:%02d %02d.%02d.%04d > %s",
-        hour, min, sec, day, month, year, message
+        hour + 2, min, sec, day, month, year, message -- (UCT+2) fuck everyone who doesn't use european summer time
     )
     log_file:write(log_info .. "\n")
     print(log_info)
@@ -151,7 +150,7 @@ chatCmd.commands = {
                 if angry then
                     chat.say("DFC is already angry")
                 else
-                    chat.say(string.format("accept the angry request with \"%s\"", commandPrefix))
+                    chat.say(string.format("confirm the angry request with \"%s confirm\"", commandPrefix))
                     angryRequest = true
                 end
             else
@@ -164,9 +163,9 @@ chatCmd.commands = {
             end
         end,
 
-        ["accept"] = function()
+        ["confirm"] = function()
             if angryRequest and angryUsers[chatCmd.lastUser] then
-                local msg = "WARNING: DFC is now angry !"
+                local msg = "WARNING: DFC is now angry!"
                 chatCmd.log(msg)
                 chat.say(msg)
                 angry = true
@@ -207,9 +206,12 @@ function chatCmd.loopCheck()
     -- check angry time
 
     if angry then
-        if (lastAngryCheck or 0) + 60 < computer.uptime() then
+        if (lastAngryCheck or 0) + 300 < computer.uptime() then
             lastAngryCheck = computer.uptime()
-            emergency("WARNING: angry mode was active for 60 seconds!")
+            local warning = "WARNING: angry mode was active for 5 minutes!"
+            chatCmd.log(warning)
+            chatCmd.chat.say(warning)
+            angry = false
         end
     else
         lastAngryCheck = computer.uptime()

@@ -18,6 +18,10 @@ function tele.queryWait(connection, ...)
         local response
 
         repeat
+            if connection.state == "closed" then
+                return false, "connection closed"
+            end
+
             response = connection:read("\n")
             os.sleep(0.1)
         until response

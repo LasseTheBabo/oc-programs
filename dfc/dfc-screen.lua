@@ -1,29 +1,22 @@
 local component = require("component")
-local term = require("term")
+local event = require("event")
 
+local logger = require("logger")
 local minitel = require("minitel")
-local tele = require("tele")
 
-local gpu = component.gpu
 local connected = true
-local status = "disconnected"
-local w, h = gpu.getResolution()
-local log = {}
-
-local function render()
-    w, h = gpu.getResolution()
-    term.clear()
-    gpu.fill(1, 2, w, 1, "-")
-    gpu.set(2, 1, string.format("Status: %s", status))
-
-    for i, line in ipairs(log) do
-        gpu.set(2, i + 3, line)
-    end
-end
 
 local function setStatus(message)
-    status = message
-    render()
+    logger.header = string.format("Status: %s", message)
+    logger.render()
+end
+
+local function split(msg)
+    local ret = {}
+    for x in msg:gmatch("[^\t]+") do
+        table.insert(ret, x)
+    end
+    return ret
 end
 
 while true do
@@ -35,17 +28,23 @@ while true do
     end
 
     while connected do
-        local message, r = tele.queryWait(connection, "log")
-        if message then
-            table.insert(log, message)
-            if #log > h - 4 then
-                table.remove(log, 1)
+        local response = connection:read("\n")
+        local _, _, _, _, direction = event.pull(0.1, "scroll")
+        if direction then
+        logger.handleScroll(-direction)
+    end
+
+        if response then
+            local parts = split(response)
+            local message
+
+            if parts[1] == "log" then
+                message = table.unpack(parts, 2)
             end
-            render()
-        elseif message == false then
-            connection.close()
-            connected = false
-            print(r)
+
+            if message then
+                logger.add(message)
+            end
         end
     end
 end

@@ -12,24 +12,38 @@ tui.colors = {
     GREEN = 0x00FF00,
     BLUE = 0x0000FF,
     YELLOW = 0xFFFF00,
-    WHITE = 0xFFFFFF
+    WHITE = 0xFFFFFF,
+
+    GREY = 0x808080,
+    LIGHT_GREY = 0xB0B0B0
 }
 
-function tui.newButton(x, y, w, h, defaultColor, pressColor, callback)
+function tui.newButton(x, y, w, h, title, defaultColor, pressColor, callback)
     local button = {
         x = x,
         y = y,
         w = w,
         h = h,
+        title = title,
         color = {
             default = defaultColor,
             pressed = pressColor
         },
-        handleEvent = callback,
+        callback = callback,
+        handleEvent = function(e, ev)
+            e.state = false
+
+            if ev.type ~= "touch" then return end
+            if not (ev.x >= e.x and ev.x <= e.x + e.w and ev.y >= e.y and ev.y <= e.y + e.h) then return end
+
+            e.state = true
+            callback()
+        end,
         state = false,
         draw = function(btn)
             gpu.setBackground(btn.state and btn.color.pressed or btn.color.default)
             gpu.fill(btn.x, btn.y, btn.w, btn.h, " ")
+            gpu.set(btn.x + (btn.w - #btn.title) / 2, btn.y + (btn.h - 1) / 2, (title or ""))
             gpu.setBackground(0x000000)
         end
     }

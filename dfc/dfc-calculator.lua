@@ -39,7 +39,16 @@ local function scalePower(power)
     return string.format("%.4f%sHE", power, suffix[i])
 end
 
+local function corePower(core, fuel1, fuel2)
+    return core.options[core.current].factor *
+        fuel1.options[fuel1.current].factor *
+        fuel2.options[fuel2.current].factor
+end
 
+local function getHeat(spk) return math.ceil(spk / 10000) end
+local function getFuelUsage(spk) return math.ceil(spk / 1000) end
+
+local emitterSpk, c1P, c2P
 
 do
     local p = tui.newPanel(width / 3 - 16, 10, 32, 8, "Core 1")
@@ -58,10 +67,17 @@ do
 end
 
 do
-    local p = tui.newPanel(10, 13, 9, 3, "Emitter")
+    local p = tui.newPanel(5, 13, 9, 3, "Emitter")
     p:add(tui.newScrollWheel(p.x + 2, p.y + 1, 1, 100))
     table.insert(elements, p)
 end
+
+table.insert(elements, tui.newButton(16, 13, 10, 3, "BOOM", tui.colors.GREY, tui.colors.LIGHT_GREY, function()
+    elements[3].children[1].current = math.min(100,
+        math.max(1,
+            math.floor(128000 * 1000 /
+                (corePower(elements[1].children[3], elements[1].children[1], elements[1].children[2]) * 95))))
+end))
 
 while true do
     local cType, address, x, y, direction = event.pull(0.1)
@@ -74,28 +90,21 @@ while true do
 
     for _, p in ipairs(elements) do p:draw() end
 
-    local emitterPower = elements[3].children[1].current
-    local spk = emitterPower * 100 * 0.95
+    emitterSpk = elements[3].children[1].current * 100 * 0.95
+    c1P = emitterSpk * corePower(elements[1].children[3], elements[1].children[1], elements[1].children[2])
+    c2P = c1P * corePower(elements[2].children[3], elements[2].children[1], elements[2].children[2])
 
-    local function corePower(core, fuel1, fuel2)
-        return core.options[core.current].factor *
-            fuel1.options[fuel1.current].factor *
-            fuel2.options[fuel2.current].factor
-    end
-
-
-    local c1P = spk * corePower(elements[1].children[3], elements[1].children[1], elements[1].children[2])
-    local c2P = c1P * corePower(elements[2].children[3], elements[2].children[1], elements[2].children[2])
-
-    local c1F = math.ceil(spk / 1000)
-    local c2F = math.ceil(c1P / 1000)
+    local c1F = getFuelUsage(emitterSpk)
+    local c2F = getFuelUsage(c1P)
 
     gpu.set(1, 1, "Core 1")
     gpu.set(3, 2, string.format("Fuel usage: %dmB/t", c1F))
-    gpu.set(3, 3, string.format("Power: %s", scalePower(c1P * 5000 * 20)))
+    gpu.set(3, 3, string.format("Heat Saturation: %d", getHeat(emitterSpk)) .. "%")
+    gpu.set(3, 4, string.format("Power: %s/s", scalePower(c1P * 5000 * 20)))
 
-    gpu.set(1, 5, "Core 2")
-    gpu.set(3, 6, string.format("Fuel usage: %dmB/t", c2F))
-    gpu.set(3, 7, string.format("Power: %s", scalePower(c2P * 5000 * 20)))
-    gpu.set(3, 8, string.format("Core works: " .. (c2F <= 128000 and "yes" or "no")))
+    gpu.set(1, 6, "Core 2")
+    gpu.set(3, 7, string.format("Fuel usage: %dmB/t", c2F))
+    gpu.set(3, 8, string.format("Heat Saturation: %d", getHeat(c1P)) .. "%")
+    gpu.set(3, 9, string.format("Power: %s/s", scalePower(c2P * 5000 * 20)))
+    gpu.set(3, 10, string.format("Core works: " .. (c2F <= 128000 and "yes" or "no")))
 end

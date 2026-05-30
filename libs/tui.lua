@@ -1,15 +1,11 @@
 -- Text UI
 
 local component = require("component")
-local event = require("event")
 
 local gpu = component.gpu
-local width, height = gpu.getResolution()
-local running = true
 
 local tui = {}
 
-local elements = {}
 tui.colors = {
     BLACK = 0x000000,
     RED = 0xFF0000,
@@ -19,7 +15,7 @@ tui.colors = {
     WHITE = 0xFFFFFF
 }
 
-function tui.addButton(x, y, w, h, defaultColor, pressColor, callback)
+function tui.newButton(x, y, w, h, defaultColor, pressColor, callback)
     local button = {
         x = x,
         y = y,
@@ -29,7 +25,7 @@ function tui.addButton(x, y, w, h, defaultColor, pressColor, callback)
             default = defaultColor,
             pressed = pressColor
         },
-        callback = callback,
+        handleEvent = callback,
         state = false,
         draw = function(btn)
             gpu.setBackground(btn.state and btn.color.pressed or btn.color.default)
@@ -38,26 +34,91 @@ function tui.addButton(x, y, w, h, defaultColor, pressColor, callback)
         end
     }
 
-    table.insert(elements, button)
+    return button
 end
 
-function tui.exit()
-    running = false
-end
+function tui.newDropDown(x, y, w, options)
+    local dropDown = {
+        x = x,
+        y = y,
+        w = w,
+        h = 1,
+        options = options,
+        current = 1,
+        handleEvent = function(e, ev)
+            if ev.type ~= "scroll" then return end
+            if not (ev.x >= e.x and ev.x <= e.x + e.w and ev.y == e.y) then return end
 
-function tui.runLoop(event)
-    while running do
-        -- reset screen
-        gpu.setBackground(0x000000)
-        gpu.fill(1, 1, width, height, " ")
+            e.current = e.current + ev.direction
+            if e.current < 1 then e.current = #e.options end
+            if e.current > #e.options then e.current = 1 end
+        end,
+        draw = function(e)
+            local item = e.options[e.current]
 
-        local id, _, x, y = event.pullFiltered(0.1, function(id) return events[id] ~= nil end)
-
-        for _, e in ipairs(elements) do
-            if e.callback then e:callback(x, y) end
-            if e.draw then e:draw() end
+            gpu.setBackground(0xA0A0A0)
+            gpu.fill(e.x, e.y, e.w, e.h, " ")
+            gpu.set(e.x + 1, e.y, string.format("(%s) %s", item.factor, item.name))
+            gpu.setBackground(0x000000)
         end
-    end
+    }
+
+    return dropDown
+end
+
+function tui.newScrollWheel(x, y, min, max)
+    local scroll = {
+        x = x,
+        y = y,
+        w = 5,
+        h = 1,
+        min = min,
+        max = max,
+        current = min,
+        handleEvent = function(e, ev)
+            if ev.type ~= "scroll" then return end
+            if not (ev.x >= e.x and ev.x <= e.x + e.w and ev.y == e.y) then return end
+
+            e.current = math.min(e.max, math.max(e.min, e.current + ev.direction))
+        end,
+        draw = function(e)
+            gpu.setBackground(0xA0A0A0)
+            gpu.fill(e.x, e.y, e.w, e.h, " ")
+            gpu.set(e.x + 1, e.y, tostring(e.current))
+            gpu.setBackground(0x000000)
+        end
+    }
+
+    return scroll
+end
+
+function tui.newPanel(x, y, w, h, title)
+    local panel = {
+        x = x,
+        y = y,
+        w = w,
+        h = h,
+        title = title or "",
+        children = {},
+        handleEvent = function(e, ev)
+            for _, c in ipairs(e.children) do c:handleEvent(ev) end
+        end,
+        draw = function(e)
+            gpu.setBackground(0x808080)
+            gpu.fill(e.x, e.y, e.w, e.h, " ")
+            if e.title ~= "" then
+                local middle = (e.w - #e.title) / 2
+                gpu.set(e.x + middle, e.y, title)
+            end
+
+            for _, c in ipairs(e.children) do c:draw() end
+        end,
+        add = function(e, c)
+            table.insert(e.children, c)
+        end
+    }
+
+    return panel
 end
 
 return tui

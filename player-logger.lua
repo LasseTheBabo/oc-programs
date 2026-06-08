@@ -9,8 +9,10 @@ local function formatTable(t1)
     local t2
 
     for _, value in ipairs(t1) do
-        t2[name] = true
+        t2[value] = true
     end
+
+    return t2
 end
 
 while true do
@@ -19,8 +21,21 @@ while true do
 
     online = formatTable(status.players.list)
 
-    
+    if online then
+        for player in pairs(online) do
+            if not lastOnline[player] then
+                print(string.format("%s joined the game", player))
+            end
+        end
 
-    lastOnline = online
+        for player in pairs(lastOnline) do
+            if not online[player] then
+                print(string.format("%s left the game", player))
+            end
+        end
+
+        lastOnline = online
+    end
+    
     os.sleep(0.1)
 end

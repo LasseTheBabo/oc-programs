@@ -23,4 +23,14 @@ function time.getTime(t)
     return parsed.hour, parsed.min, parsed.sec
 end
 
+function time.getFormattedTime(t)
+    local year, month, day = time.getDate(t)
+    local hour, min, sec = time.getTime(t)
+    local formattedTime = string.format(
+        "%02d:%02d:%02d %02d.%02d.%04d",
+        hour + 2, min, sec, day, month, year -- (UCT+2) fuck everyone who doesn't use european summer time
+    )
+    return formattedTime
+end
+
 return time

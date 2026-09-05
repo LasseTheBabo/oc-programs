@@ -31,8 +31,8 @@ while true do
         local response = connection:read("\n")
         local _, _, _, _, direction = event.pull(0.1, "scroll")
         if direction then
-        logger.handleScroll(-direction)
-    end
+            logger.handleScroll(-direction)
+        end
 
         if response then
             local parts = split(response)

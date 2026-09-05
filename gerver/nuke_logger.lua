@@ -10,7 +10,6 @@ local terminal = component.rbmk_terminal
 
 
 local last_event_times = {}
-local last_cleanup = 0
 local log_path = "/etc/nukelogger.log"
 local utcTime = ""
 
@@ -44,7 +43,7 @@ end
 
 terminal.enableOCMode(true)
 terminal.clearScreen()
-
+local last_cleanup = time.getUnformattedTime()
 
 
 while true do
@@ -62,10 +61,8 @@ while true do
 
     local intensity, x, z = table.unpack(latest_event)
     if intensity and tonumber(x) and tonumber(z) then
-        local last_time = last_event_times[event_id] or 0
-
         -- dont spam shit
-        if (utcTime - last_time) >= 60 then
+        if not last_event_times[event_id] then
             log(string.format("Explosion of %s intensity around x=%d z=%d", intensity, x, z))
             last_event_times[event_id] = utcTime
         end
@@ -75,10 +72,11 @@ while true do
     -- delete old events after 5 minutes
     if (utcTime - last_cleanup) >= 300 then
         for id, last_time in pairs(last_event_times) do
-            if (utcTime - last_cleanup) >= 120 then
+            if (utcTime - last_time) >= 120 then
                 last_event_times[id] = nil
             end
         end
+        terminal.clearScreen()
         last_cleanup = utcTime
     end
 end

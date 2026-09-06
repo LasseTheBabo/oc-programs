@@ -9,6 +9,7 @@ local terminal = component.rbmk_terminal
 
 
 local last_event_times = {}
+local last_cleanup = time.getUnformattedTime()
 local log_path = "/etc/nukelogger.log"
 local utcTime = ""
 
@@ -34,6 +35,15 @@ local function log(message)
     logger.add(log_info)
 end
 
+local function flush()
+    for id, last_time in pairs(last_event_times) do
+        if (utcTime - last_time) >= 120 then
+            last_event_times[id] = nil
+        end
+    end
+    terminal.clearScreen()
+    last_cleanup = utcTime
+end
 
 if not terminal then
     print("This program requires a Redstone-over-Radio Terminal to run!")
@@ -42,7 +52,6 @@ end
 
 terminal.enableOCMode(true)
 terminal.clearScreen()
-local last_cleanup = time.getUnformattedTime()
 
 
 while true do
@@ -70,12 +79,6 @@ while true do
     -- RAM is expensive, don't clog the table
     -- delete old events after 5 minutes
     if (utcTime - last_cleanup) >= 300 then
-        for id, last_time in pairs(last_event_times) do
-            if (utcTime - last_time) >= 120 then
-                last_event_times[id] = nil
-            end
-        end
-        terminal.clearScreen()
-        last_cleanup = utcTime
+        pcall(flush())
     end
 end

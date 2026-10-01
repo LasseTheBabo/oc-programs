@@ -55,7 +55,7 @@ function adb.addAddress(path, name, address)
     -- i hate exceptions
     local db = adb.getAddresses(path)
     if db and db[name] then
-        return db, "name already exists"
+        return nil, "name already exists"
     end
 
     local file, r = io.open(path, "a")

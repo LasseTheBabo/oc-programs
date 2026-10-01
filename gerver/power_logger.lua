@@ -32,7 +32,7 @@ while running  do
     term.clear()
 
     term.setCursor(1, 1)
-    term.write("Press Ctrl+C to exit")
+    term.write("Press 'Ctrl-C' to exit")
 
     term.setCursor(1, 3)
     term.write(string.format("Consumption: %s", consumption))

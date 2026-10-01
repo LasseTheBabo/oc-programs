@@ -1,3 +1,12 @@
+-- Gerver Season 6
+-- DFC control program
+-- more secure version of the Derver 1.5 program
+--
+-- changed whitelist
+-- added component existance checking
+-- added fuel flow check for the second core
+-- added angry request timeout (30s)
+
 local component = require("component")
 local computer = require("computer")
 local filesystem = require("filesystem")

@@ -241,7 +241,9 @@ chatCmd.commands = {
     }
 }
 
-thread.create(function() -- function chatCmd.loopCheck()
+function chatCmd.loopCheck() end
+
+thread.create(function()
 print("debug1")    
 while true do
         print(angry)
@@ -293,7 +295,7 @@ while true do
         else
             lastRequestCheck = computer.uptime()
         end
-        
+
         os.sleep(0.05)
     end
 end)

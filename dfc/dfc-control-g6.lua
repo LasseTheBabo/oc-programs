@@ -8,10 +8,19 @@ local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
 
+local function component_error(c)
+    print(string.format("This program requires a %s to run!", c))
+end
+
 local redstone = component.redstone
 local emitter = component.dfc_emitter
 local chat = chatCmd.chat
+local c2_gauge = component.ntm_fluid_gauge -- 2. Core fuel fluid cauge
 
+if not redstone then component_error("Redstone I/O") return end
+if not emitter then component_error("DFC Emitter") return end
+if not chat then component_error("Computronics Chat Box") return end
+if not c2_gauge then component_error("Fluid Gauge") return end
 
 -- some variables
 
@@ -24,6 +33,7 @@ local angryRequest = false
 local log_path = "/etc/dfc.log"
 local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
+local c2_minFlow = 16778 -- 2^31/128000
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
@@ -205,8 +215,15 @@ function chatCmd.loopCheck()
         emergency("WARNING: cryogel low! check cryogel production")
     end
 
-    -- check angry time
+    -- check angry core fuel flow
+    if angry then
+        c2_flow = c2_gauge.getTransfer()
+        if c2_flow < c2_minFlow then
+            emergency(string.format("WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow, c2_minFlow))
+        end
+    end
 
+    -- check angry on time
     if angry then
         if (lastAngryCheck or 0) + 300 < computer.uptime() then
             lastAngryCheck = computer.uptime()
@@ -219,6 +236,7 @@ function chatCmd.loopCheck()
         lastAngryCheck = computer.uptime()
     end
 
+    -- check angry request timeout
     if angryRequest then
         if (lastRequestCheck or 0) + 30 < computer.uptime() then
             lastRequestCheck = computer.uptime()

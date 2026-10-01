@@ -4,7 +4,7 @@
 --
 -- changed whitelist
 -- added component existance checking
--- added fuel flow check for the second core
+-- added second core radius check
 -- added angry request timeout (30s)
 -- too many fixes to count...
 -- put security checks in another thread for faster response
@@ -29,22 +29,19 @@ end
 local redstone = component.redstone
 local emitter = component.dfc_emitter
 local chat = chatCmd.chat
-local c2_gauge = component.ntm_fluid_gauge -- 2. Core fuel fluid cauge
 
 if not redstone then
     component_error("Redstone I/O")
     return
 end
+
 if not emitter then
     component_error("DFC Emitter")
     return
 end
+
 if not chat then
     component_error("Computronics Chat Box")
-    return
-end
-if not c2_gauge then
-    component_error("Fluid Gauge")
     return
 end
 
@@ -59,7 +56,6 @@ local angryRequest = false
 local log_path = "/etc/dfc.log"
 local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
-local c2_minFlow = 16778 -- 2^31/128000
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
@@ -132,6 +128,18 @@ local function toBool(state)
     else
         return nil
     end
+end
+
+local function getHeat()
+    return emitter.getInput() * 95 -- Spk
+        * 2.5                      -- Fuel 1
+        * 2.7                      -- Fuel 2
+        * 2500                     -- Core
+        / 10000                    -- Spk to heat
+end
+
+local function isNegativeRadius(heat)
+    return (2 ^ 31 - 256000 * (heat * 10) % (2 ^ 32)) < 0
 end
 
 
@@ -245,25 +253,17 @@ function chatCmd.loopCheck() end
 
 thread.create(function()
     while true do
-        -- set angry state
-        if angry then
-            redstone.setOutput(angrySide, 15)
-        else
-            redstone.setOutput(angrySide, 0)
-        end
-
         -- check cryogel
         if emitter.getCryogel() < 60000 then
             emergency("WARNING: cryogel low! check cryogel production")
         end
 
         -- check angry core fuel flow
-        if angry and emitter.isActive() then
-            local c2_flow = c2_gauge.getTransfer()
-            if c2_flow < c2_minFlow then
-                emergency(string.format(
-                    "WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow,
-                    c2_minFlow))
+        if angry then
+            local heat = getHeat()
+            if not isNegativeRadius(heat) then
+                chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
+                angry = false
             end
         end
 
@@ -291,6 +291,13 @@ thread.create(function()
             end
         else
             lastRequestCheck = computer.uptime()
+        end
+
+        -- set angry state
+        if angry then
+            redstone.setOutput(angrySide, 15)
+        else
+            redstone.setOutput(angrySide, 0)
         end
 
         os.sleep(0.05)

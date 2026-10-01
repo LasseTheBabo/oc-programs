@@ -106,7 +106,7 @@ local angryUsers = {
 }
 
 chatCmd.deniedUsers = {
-
+    -- maybe admins? :)
 }
 
 chatCmd.denyMessage = "fuck nah you won't turn on this shitbox"
@@ -244,10 +244,7 @@ chatCmd.commands = {
 function chatCmd.loopCheck() end
 
 thread.create(function()
-print("debug1")    
-while true do
-        print(angry)
-        print(chatCmd)
+    while true do
         -- set angry state
         if angry then
             redstone.setOutput(angrySide, 15)

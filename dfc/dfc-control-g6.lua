@@ -242,7 +242,9 @@ chatCmd.commands = {
 }
 
 thread.create(function() -- function chatCmd.loopCheck()
-    while true do
+print("debug1")    
+while true do
+        print("debug2")
         -- set angry state
         if angry then
             redstone.setOutput(angrySide, 15)
@@ -290,7 +292,7 @@ thread.create(function() -- function chatCmd.loopCheck()
         else
             lastRequestCheck = computer.uptime()
         end
-        chatCmd.say("test")
+        
         os.sleep(0.05)
     end
 end)

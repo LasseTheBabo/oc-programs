@@ -26,10 +26,22 @@ local emitter = component.dfc_emitter
 local chat = chatCmd.chat
 local c2_gauge = component.ntm_fluid_gauge -- 2. Core fuel fluid cauge
 
-if not redstone then component_error("Redstone I/O") return end
-if not emitter then component_error("DFC Emitter") return end
-if not chat then component_error("Computronics Chat Box") return end
-if not c2_gauge then component_error("Fluid Gauge") return end
+if not redstone then
+    component_error("Redstone I/O")
+    return
+end
+if not emitter then
+    component_error("DFC Emitter")
+    return
+end
+if not chat then
+    component_error("Computronics Chat Box")
+    return
+end
+if not c2_gauge then
+    component_error("Fluid Gauge")
+    return
+end
 
 -- some variables
 
@@ -89,7 +101,7 @@ local angryUsers = {
 }
 
 chatCmd.deniedUsers = {
-    
+
 }
 
 chatCmd.denyMessage = "fuck nah you won't turn on this shitbox"
@@ -185,11 +197,15 @@ chatCmd.commands = {
         end,
 
         ["confirm"] = function()
-            if angryRequest and angryUsers[chatCmd.lastUser] then
-                local msg = "WARNING: DFC is now angry!"
-                chatCmd.log(msg)
-                chat.say(msg)
-                angry = true
+            if angryUsers[chatCmd.lastUser] then
+                if angryRequest then
+                    local msg = "WARNING: DFC is now angry!"
+                    chatCmd.log(msg)
+                    chat.say(msg)
+                    angry = true
+                else
+                    chat.say("no pending angry request")
+                end
             else
                 chatCmd.log("not enough permissions")
                 chat.say("you don't have enough permissions to do that")
@@ -212,8 +228,8 @@ chatCmd.commands = {
         ["preset1"] = function()
             local c = chatCmd.commands["#dfc"]
             c["unlock"]()
-            c["power"]("11")
-            c["angry"]("true")
+            c["power"]({ "11" })
+            c["angry"]({ "true" })
             c["confirm"]()
             c["on"]()
         end
@@ -237,7 +253,9 @@ function chatCmd.loopCheck()
     if angry and emitter.isActive() then
         local c2_flow = c2_gauge.getTransfer()
         if c2_flow < c2_minFlow then
-            emergency(string.format("WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow, c2_minFlow))
+            emergency(string.format(
+                "WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow,
+                c2_minFlow))
         end
     end
 

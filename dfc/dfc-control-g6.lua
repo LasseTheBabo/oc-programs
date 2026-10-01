@@ -6,11 +6,15 @@
 -- added component existance checking
 -- added fuel flow check for the second core
 -- added angry request timeout (30s)
+-- too many fixes to count...
+-- put security checks in another thread for faster response
+-- added preset1
 
 local component = require("component")
 local computer = require("computer")
 local filesystem = require("filesystem")
 local sides = require("sides")
+local thread = require("thread")
 
 local chatCmd = require("chat-cmd")
 local minitel = require("minitel")
@@ -236,7 +240,7 @@ chatCmd.commands = {
     }
 }
 
-function chatCmd.loopCheck()
+thread.create(function()--function chatCmd.loopCheck()
     -- set angry state
     if angry then
         redstone.setOutput(angrySide, 15)
@@ -284,6 +288,6 @@ function chatCmd.loopCheck()
     else
         lastRequestCheck = computer.uptime()
     end
-end
+end)
 
 chatCmd.runLoop()

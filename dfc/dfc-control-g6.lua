@@ -62,7 +62,7 @@ local lastRequestCheck = computer.uptime()
 local c2_minFlow = 16778 -- 2^31/128000
 
 print("connecting to screen")
-local screen, r = minitel.open("dfc-screen", 7000)
+local screen, r = nil,nil--minitel.open("dfc-screen", 7000)
 
 if not screen then
     print("unable to open connection: " .. r)

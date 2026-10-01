@@ -241,57 +241,58 @@ chatCmd.commands = {
     }
 }
 
-thread.create(function()--function chatCmd.loopCheck()
+thread.create(function() -- function chatCmd.loopCheck()
     while true do
-    -- set angry state
-    if angry then
-        redstone.setOutput(angrySide, 15)
-    else
-        redstone.setOutput(angrySide, 0)
-    end
-
-    -- check cryogel
-    if emitter.getCryogel() < 60000 then
-        emergency("WARNING: cryogel low! check cryogel production")
-    end
-
-    -- check angry core fuel flow
-    if angry and emitter.isActive() then
-        local c2_flow = c2_gauge.getTransfer()
-        if c2_flow < c2_minFlow then
-            emergency(string.format(
-                "WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow,
-                c2_minFlow))
+        -- set angry state
+        if angry then
+            redstone.setOutput(angrySide, 15)
+        else
+            redstone.setOutput(angrySide, 0)
         end
-    end
 
-    -- check angry on time
-    if angry then
-        if (lastAngryCheck or 0) + 300 < computer.uptime() then
+        -- check cryogel
+        if emitter.getCryogel() < 60000 then
+            emergency("WARNING: cryogel low! check cryogel production")
+        end
+
+        -- check angry core fuel flow
+        if angry and emitter.isActive() then
+            local c2_flow = c2_gauge.getTransfer()
+            if c2_flow < c2_minFlow then
+                emergency(string.format(
+                    "WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow,
+                    c2_minFlow))
+            end
+        end
+
+        -- check angry on time
+        if angry then
+            if (lastAngryCheck or 0) + 300 < computer.uptime() then
+                lastAngryCheck = computer.uptime()
+                local warning = "WARNING: angry mode was active for 5 minutes!"
+                chatCmd.log(warning)
+                chatCmd.chat.say(warning)
+                angry = false
+            end
+        else
             lastAngryCheck = computer.uptime()
-            local warning = "WARNING: angry mode was active for 5 minutes!"
-            chatCmd.log(warning)
-            chatCmd.chat.say(warning)
-            angry = false
         end
-    else
-        lastAngryCheck = computer.uptime()
-    end
 
-    -- check angry request timeout
-    if angryRequest then
-        if (lastRequestCheck or 0) + 30 < computer.uptime() then
+        -- check angry request timeout
+        if angryRequest then
+            if (lastRequestCheck or 0) + 30 < computer.uptime() then
+                lastRequestCheck = computer.uptime()
+                local warning = "Angry request timed out after 30 seconds"
+                chatCmd.log(warning)
+                chatCmd.chat.say(warning)
+                angryRequest = false
+            end
+        else
             lastRequestCheck = computer.uptime()
-            local warning = "Angry request timed out after 30 seconds"
-            chatCmd.log(warning)
-            chatCmd.chat.say(warning)
-            angryRequest = false
         end
-    else
-        lastRequestCheck = computer.uptime()
+        chatCmd.say("test")
+        os.sleep(0.05)
     end
-    os.sleep(0.05)
-end
 end)
 
 chatCmd.runLoop()

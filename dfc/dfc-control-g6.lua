@@ -207,6 +207,15 @@ chatCmd.commands = {
 
         ["panic"] = function()
             emergency("DFC AZ-5 was triggered")
+        end,
+
+        ["preset1"] = function()
+            local c = chatCmd.commands["#dfc"]
+            c["unlock"]()
+            c["power"]("11")
+            c["angry"]("true")
+            c["confirm"]()
+            c["on"]()
         end
     }
 }

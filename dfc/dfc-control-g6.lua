@@ -244,7 +244,8 @@ chatCmd.commands = {
 thread.create(function() -- function chatCmd.loopCheck()
 print("debug1")    
 while true do
-        print("debug2")
+        print(angry)
+        print(chatCmd)
         -- set angry state
         if angry then
             redstone.setOutput(angrySide, 15)

@@ -226,7 +226,7 @@ function chatCmd.loopCheck()
 
     -- check angry core fuel flow
     if angry then
-        c2_flow = c2_gauge.getTransfer()
+        local c2_flow = c2_gauge.getTransfer()
         if c2_flow < c2_minFlow then
             emergency(string.format("WARNING: 2. core fuel flow too low (%smB/t)! %smB/t needed for negative explosion radius", c2_flow, c2_minFlow))
         end

@@ -13,6 +13,7 @@
 local component = require("component")
 local computer = require("computer")
 local filesystem = require("filesystem")
+local os = require("os")
 local sides = require("sides")
 local thread = require("thread")
 
@@ -241,6 +242,7 @@ chatCmd.commands = {
 }
 
 thread.create(function()--function chatCmd.loopCheck()
+    while true do
     -- set angry state
     if angry then
         redstone.setOutput(angrySide, 15)
@@ -288,6 +290,8 @@ thread.create(function()--function chatCmd.loopCheck()
     else
         lastRequestCheck = computer.uptime()
     end
+    os.sleep(0.05)
+end
 end)
 
 chatCmd.runLoop()

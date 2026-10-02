@@ -159,6 +159,15 @@ local function isNegativeRadius(heat)
     return (2 ^ 31 - 256000 * (heat * 10) % (2 ^ 32)) < 0
 end
 
+local function gotoNextStable(power)
+    while not isNegativeRadius(getHeat(power)) and power > 0 do
+        power = power - 1
+        os.sleep(0)
+    end
+
+    return power
+end
+
 
 chatCmd.commands = {
     [commandPrefix] = {
@@ -277,7 +286,6 @@ chatCmd.commands = {
 
             local maxWatt = math.floor(128000 * factor)
 
-
             local c = chatCmd.commands["#dfc"]
             c["unlock"]()
             c["power"]({ maxWatt })
@@ -288,11 +296,7 @@ chatCmd.commands = {
             os.sleep(securityLoopTime)
             maxPower = math.floor(math.ceil(c2_gauge.getTransfer() / perMachine) * perMachine * factor)
 
-            while not isNegativeRadius(getHeat(maxPower)) and maxPower > 0 do
-                maxPower = maxPower - 1
-                os.sleep(0)
-                print(maxPower)
-            end
+            maxPower = gotoNextStable(maxPower)
 
             chat.say("Highest emitter power for angry mode: " .. maxPower)
 
@@ -312,16 +316,20 @@ thread.create(function()
 
         if angry then
             if not calculating then
+                local emitterPower = emitter.getInput() -- i hate caching but cpu calls...
+
                 -- check for too high power setting
-                if emitter.getInput() > maxPower then
+                if emitterPower > maxPower then
                     emitter.setInput(maxPower)
                 end
 
                 -- check for negative radius
-                local heat = getHeat(emitter.getInput())
-                if not isNegativeRadius(heat) then
-                    chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
-                    angry = false
+                local power = gotoNextStable(emitterPower)
+                if power ~= emitterPower then
+                    local message = "WARNING: 2. core goes down to next stable power"
+                    chat.say(message)
+                    chatCmd.log(message)
+                    emitter.setInput(power)
                 end
             end
 

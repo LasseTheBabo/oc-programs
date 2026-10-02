@@ -323,13 +323,16 @@ thread.create(function()
             if not calculating then
                 -- check for too high power setting
                 if emitter.getInput() > maxPower then
+                    local message = string.format("Power too high. Setting to %s", maxPower)
                     emitter.setInput(maxPower)
+                    chat.say(message)
+                    chatCmd.log(message)
                 end
 
                 -- check for negative radius
                 local power = gotoNextStable(emitter.getInput())
                 if power ~= emitter.getInput() then
-                    local message = string.format("WARNING: 2. core goes down to next stable power (%s)", power)
+                    local message = string.format("WARNING: second core goes down to next stable power (%s)", power)
                     emitter.setInput(power)
                     chat.say(message)
                     chatCmd.log(message)

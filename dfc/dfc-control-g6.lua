@@ -326,10 +326,10 @@ thread.create(function()
                 -- check for negative radius
                 local power = gotoNextStable(emitterPower)
                 if power ~= emitterPower then
-                    local message = "WARNING: 2. core goes down to next stable power"
+                    local message = string.format("WARNING: 2. core goes down to next stable power (%s)", power)
+                    emitter.setInput(power)
                     chat.say(message)
                     chatCmd.log(message)
-                    emitter.setInput(power)
                 end
             end
 

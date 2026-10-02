@@ -64,7 +64,7 @@ local angryRequest = false
 local log_path = "/etc/dfc.log"
 local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
-local maxPower = 1
+local maxPower = 100
 local calculating = false
 local securityLoopTime = 1
 
@@ -160,7 +160,7 @@ local function isNegativeRadius(heat)
 end
 
 local function gotoNextStable(power)
-    while not isNegativeRadius(getHeat(power)) and power > 0 do
+    while not isNegativeRadius(getHeat(power)) and power > 1 do
         power = power - 1
         os.sleep(0)
     end

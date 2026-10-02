@@ -275,6 +275,7 @@ chatCmd.commands = {
 
         ["calculate"] = function()
             calculating = true
+            local previous = {emitter.isActive(), emitter.getInput(), angry}
 
             local perMachine = 200 * 7 / 3
             local factor =
@@ -301,6 +302,9 @@ chatCmd.commands = {
             chat.say("Highest emitter power for angry mode: " .. maxPower)
 
             calculating = false
+            emitter.setActive(previous[1])
+            emitter.setInput(previous[2])
+            angry = previous[3]
         end
     }
 }

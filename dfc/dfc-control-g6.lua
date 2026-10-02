@@ -58,6 +58,7 @@ chat.setName("DFC")
 local angrySide = sides.top
 local locked = false
 local angry = false
+local lastAngry = false
 local commandPrefix = "#dfc"
 local angryRequest = false
 local log_path = "/etc/dfc.log"
@@ -285,6 +286,7 @@ chatCmd.commands = {
 
             while not isNegativeRadius(maxPower) and maxPower > 0 do
                 maxPower = maxPower - 1
+                os.sleep(0)
             end
 
             chat.say("Highest emitter power for angry mode: " .. maxPower)
@@ -340,13 +342,16 @@ thread.create(function()
         end
 
         -- set angry state
-        if angry then
+        if angry and not lastAngry then
             redstone.setOutput(angrySide, 15)
-        else
+        end
+
+        if lastAngry and not angry then
             redstone.setOutput(angrySide, 0)
         end
 
-        os.sleep(0.05)
+        lastAngry = angry
+        os.sleep(angry and 0.05 or 1)
     end
 end)
 

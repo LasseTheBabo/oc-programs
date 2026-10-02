@@ -65,6 +65,7 @@ local log_path = "/etc/dfc.log"
 local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
 local maxPower = 1
+local calculating = false
 
 -- Core 1 information
 local c1 = 2500  -- Core
@@ -150,7 +151,7 @@ local function getHeat(watt)
         * c1
         * c1f1
         * c1f2
-        / 10000                    -- Spk to heat
+        / 10000 -- Spk to heat
 end
 
 local function isNegativeRadius(heat)
@@ -263,6 +264,8 @@ chatCmd.commands = {
         end,
 
         ["calculate"] = function()
+            calculating = true
+            
             local perMachine = 200 * 7 / 3
             local factor =
                 1000 / (   -- to Spk
@@ -291,6 +294,8 @@ chatCmd.commands = {
             end
 
             chat.say("Highest emitter power for angry mode: " .. maxPower)
+
+            calculating = false
         end
     }
 }
@@ -305,16 +310,18 @@ thread.create(function()
         end
 
         if angry then
-            -- check for too high power setting
-            if emitter.getInput() > maxPower then
-                emitter.setInput(maxPower)
-            end
+            if not calculating then
+                -- check for too high power setting
+                if emitter.getInput() > maxPower then
+                    emitter.setInput(maxPower)
+                end
 
-            -- check for negative radius
-            local heat = getHeat(emitter.getInput())
-            if not isNegativeRadius(heat) then
-                chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
-                angry = false
+                -- check for negative radius
+                local heat = getHeat(emitter.getInput())
+                if not isNegativeRadius(heat) then
+                    chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
+                    angry = false
+                end
             end
 
             -- check angry ontime

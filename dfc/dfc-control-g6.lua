@@ -301,21 +301,20 @@ thread.create(function()
             emergency("WARNING: cryogel low! check cryogel production")
         end
 
-        -- check angry core fuel flow
         if angry then
+            -- check for too high power setting
             if emitter.getInput() > maxPower then
                 emitter.setInput(maxPower)
             end
 
+            -- check for negative radius
             local heat = getHeat(emitter.getInput())
             if not isNegativeRadius(heat) then
                 chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
                 angry = false
             end
-        end
 
-        -- check angry on time
-        if angry then
+            -- check angry ontime
             if (lastAngryCheck or 0) + 300 < computer.uptime() then
                 lastAngryCheck = computer.uptime()
                 local warning = "WARNING: angry mode was active for 5 minutes!"

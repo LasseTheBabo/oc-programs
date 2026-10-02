@@ -320,16 +320,14 @@ thread.create(function()
 
         if angry then
             if not calculating then
-                local emitterPower = emitter.getInput() -- i hate caching but cpu calls...
-
                 -- check for too high power setting
-                if emitterPower > maxPower then
+                if emitter.getInput() > maxPower then
                     emitter.setInput(maxPower)
                 end
 
                 -- check for negative radius
-                local power = gotoNextStable(emitterPower)
-                if power ~= emitterPower then
+                local power = gotoNextStable(emitter.getInput())
+                if power ~= emitter.getInput() then
                     local message = string.format("WARNING: 2. core goes down to next stable power (%s)", power)
                     emitter.setInput(power)
                     chat.say(message)

@@ -6,6 +6,7 @@
 -- added component existance checking
 -- added second core radius check
 -- added angry request timeout (30s)
+-- added electrolysis machine calculations
 -- too many fixes to count...
 -- put security checks in another thread for faster response
 -- added preset1
@@ -29,6 +30,7 @@ end
 local redstone = component.redstone
 local emitter = component.dfc_emitter
 local chat = chatCmd.chat
+local c2_gauge = component.ntm_fluid_gauge
 
 if not redstone then
     component_error("Redstone I/O")
@@ -45,6 +47,11 @@ if not chat then
     return
 end
 
+if not c2_gauge then
+    component_error("Fluid Gauge")
+    return
+end
+
 -- some variables
 
 chat.setName("DFC")
@@ -56,6 +63,13 @@ local angryRequest = false
 local log_path = "/etc/dfc.log"
 local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
+local maxPower = 1
+
+-- Core 1 information
+local c1 = 2500  -- Core
+local c1f1 = 2.5 -- Fuel 1
+local c1f2 = 2.7 -- Fuel 2
+
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)
@@ -130,11 +144,11 @@ local function toBool(state)
     end
 end
 
-local function getHeat()
-    return emitter.getInput() * 95 -- Spk
-        * 2.5                      -- Fuel 1
-        * 2.7                      -- Fuel 2
-        * 2500                     -- Core
+local function getHeat(watt)
+    return watt * 95 -- Spk
+        * c1
+        * c1f1
+        * c1f2
         / 10000                    -- Spk to heat
 end
 
@@ -245,6 +259,35 @@ chatCmd.commands = {
             c["angry"]({ "true" })
             c["confirm"]()
             c["on"]()
+        end,
+
+        ["calculate"] = function()
+            local perMachine = 200 * 7 / 3
+            local factor =
+                1000 / (   -- to Spk
+                    c1 *   -- core factr
+                    c1f1 * -- fuel 1 factor
+                    c1f2 * -- fuel 2 factor
+                    95)    -- to emitter watt
+
+            local maxWatt = math.floor(128000 * factor)
+
+
+            local c = chatCmd.commands["#dfc"]
+            c["unlock"]()
+            c["power"]({ maxWatt })
+            c["angry"]({ "true" })
+            c["confirm"]()
+            c["on"]()
+
+            os.sleep(0.5)
+            maxPower = math.floor(math.ceil(c2_gauge.getTransfer() / perMachine) * perMachine * factor)
+
+            while not isNegativeRadius(maxPower) and maxPower > 0 do
+                maxPower = maxPower - 1
+            end
+
+            chat.say("Highest emitter power for angry mode: " .. maxPower)
         end
     }
 }
@@ -260,7 +303,11 @@ thread.create(function()
 
         -- check angry core fuel flow
         if angry then
-            local heat = getHeat()
+            if emitter.getInput() > maxPower then
+                emitter.setInput(maxPower)
+            end
+
+            local heat = getHeat(emitter.getInput())
             if not isNegativeRadius(heat) then
                 chat.say("WARNING: 2. core heat instable! Negative radius can't be exploited")
                 angry = false

@@ -254,10 +254,11 @@ chatCmd.commands = {
         end,
 
         ["info"] = function()
-            chat.say("Active: " .. tostring(emitter.isActive()))
-            chat.say("Angry:  " .. tostring(angry))
-            chat.say("Locked: " .. tostring(locked))
-            chat.say("Power:  " .. tostring(emitter.getInput()))
+            chat.say("Active:         " .. tostring(emitter.isActive()))
+            chat.say("Angry Mode:     " .. tostring(angry))
+            chat.say("Locked:         " .. tostring(locked))
+            chat.say("Current Power:  " .. tostring(emitter.getInput()))
+            chat.say("Maximum Power:  " .. tostring(maxPower))
         end,
 
         ["panic"] = function()

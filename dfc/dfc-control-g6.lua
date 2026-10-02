@@ -286,6 +286,9 @@ chatCmd.commands = {
             c["on"]()
 
             os.sleep(securityLoopTime)
+            chatCmd.say(c2_gauge.getTransfer() / perMachine)
+            chatCmd.say(perMachine)
+            chatCmd.say(factor)
             maxPower = math.floor(math.ceil(c2_gauge.getTransfer() / perMachine) * perMachine * factor)
 
             while not isNegativeRadius(maxPower) and maxPower > 0 do

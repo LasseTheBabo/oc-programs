@@ -287,6 +287,7 @@ chatCmd.commands = {
             while not isNegativeRadius(maxPower) and maxPower > 0 do
                 maxPower = maxPower - 1
                 os.sleep(0)
+                print(maxPower)
             end
 
             chat.say("Highest emitter power for angry mode: " .. maxPower)

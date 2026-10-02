@@ -66,6 +66,7 @@ local lastAngryCheck = computer.uptime()
 local lastRequestCheck = computer.uptime()
 local maxPower = 1
 local calculating = false
+local securityLoopTime = 1
 
 -- Core 1 information
 local c1 = 2500  -- Core
@@ -265,7 +266,7 @@ chatCmd.commands = {
 
         ["calculate"] = function()
             calculating = true
-            
+
             local perMachine = 200 * 7 / 3
             local factor =
                 1000 / (   -- to Spk
@@ -284,7 +285,7 @@ chatCmd.commands = {
             c["confirm"]()
             c["on"]()
 
-            os.sleep(0.5)
+            os.sleep(securityLoopTime)
             maxPower = math.floor(math.ceil(c2_gauge.getTransfer() / perMachine) * perMachine * factor)
 
             while not isNegativeRadius(maxPower) and maxPower > 0 do
@@ -359,7 +360,8 @@ thread.create(function()
         end
 
         lastAngry = angry
-        os.sleep(angry and 0.05 or 1)
+        securityLoopTime = angry and 0.05 or 1
+        os.sleep(securityLoopTime)
     end
 end)
 

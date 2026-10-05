@@ -23,34 +23,14 @@ local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
 
-local function component_error(c)
-    print(string.format("This program requires a %s to run!", c))
-end
-
 local redstone = component.redstone
 local emitter = component.dfc_emitter
+local receiver = component.dfc_receiver
 local chat = chatCmd.chat
 local c2_gauge = component.ntm_fluid_gauge
+local stabilizers = {}
+for c, _ in pairs(component.list("dfc_stabilizer")) do table.insert(stabilizers, component.proxy(c)) end
 
-if not redstone then
-    component_error("Redstone I/O")
-    return
-end
-
-if not emitter then
-    component_error("DFC Emitter")
-    return
-end
-
-if not chat then
-    component_error("Computronics Chat Box")
-    return
-end
-
-if not c2_gauge then
-    component_error("Fluid Gauge")
-    return
-end
 
 -- some variables
 
@@ -67,6 +47,7 @@ local lastRequestCheck = computer.uptime()
 local maxPower = 100
 local calculating = false
 local securityLoopTime = 1
+local triedLowering = 0
 
 -- Core 1 information
 local c1 = 2500  -- Core
@@ -265,10 +246,10 @@ chatCmd.commands = {
             emergency("DFC AZ-5 was triggered")
         end,
 
-        ["preset1"] = function()
-            local c = chatCmd.commands["#dfc"]
+        ["preset"] = function()
+            local c = chatCmd.commands[commandPrefix]
             c["unlock"]()
-            c["power"]({ "11" })
+            c["power"]({ "10" })
             c["angry"]({ "true" })
             c["confirm"]()
             c["on"]()
@@ -276,7 +257,7 @@ chatCmd.commands = {
 
         ["calculate"] = function()
             calculating = true
-            local previous = {emitter.isActive(), emitter.getInput(), angry}
+            local previous = { emitter.isActive(), emitter.getInput(), angry }
 
             local perMachine = 200 * 7 / 3
             local factor =
@@ -288,7 +269,7 @@ chatCmd.commands = {
 
             local maxWatt = math.floor(128000 * factor)
 
-            local c = chatCmd.commands["#dfc"]
+            local c = chatCmd.commands[commandPrefix]
             c["unlock"]()
             c["power"]({ maxWatt })
             c["angry"]({ "true" })
@@ -315,8 +296,16 @@ function chatCmd.loopCheck() end
 thread.create(function()
     while true do
         -- check cryogel
-        if emitter.getCryogel() < 60000 then
+        if emitter.getCryogel() < 63500  or receiver.getCryogel < 63500 then
             emergency("WARNING: cryogel low! check cryogel production")
+        end
+
+
+        -- stabilizer lenses
+        for _, stabilizer in ipairs(stabilizers) do
+            if stabilizer.getDurability() < 1000000 then
+                emergency("WARNING: stabilizer lens durability is low!")
+            end
         end
 
         if angry then
@@ -332,6 +321,7 @@ thread.create(function()
                 -- check for negative radius
                 local power = gotoNextStable(emitter.getInput())
                 if power ~= emitter.getInput() then
+                    triedLowering = triedLowering + 1
                     local message = string.format("WARNING: second core goes down to next stable power (%s)", power)
                     emitter.setInput(power)
                     chat.say(message)
@@ -373,6 +363,8 @@ thread.create(function()
             redstone.setOutput(angrySide, 0)
         end
 
+        triedLowering = triedLowering - 0.5
+        if triedLowering <= 0 then triedLowering = 0 end
         lastAngry = angry
         securityLoopTime = angry and 0.05 or 1
         os.sleep(securityLoopTime)

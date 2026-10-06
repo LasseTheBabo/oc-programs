@@ -38,7 +38,6 @@ chat.setName("DFC")
 local angrySide = sides.top
 local locked = false
 local angry = false
-local lastAngry = false
 local commandPrefix = "#dfc"
 local angryRequest = false
 local log_path = "/etc/dfc.log"
@@ -355,17 +354,14 @@ thread.create(function()
         end
 
         -- set angry state
-        if angry and not lastAngry then
+        if angry then
             redstone.setOutput(angrySide, 15)
-        end
-
-        if lastAngry and not angry then
+        else
             redstone.setOutput(angrySide, 0)
         end
 
         triedLowering = triedLowering - 0.5
         if triedLowering <= 0 then triedLowering = 0 end
-        lastAngry = angry
         securityLoopTime = angry and 0.05 or 1
         os.sleep(securityLoopTime)
     end

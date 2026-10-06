@@ -295,7 +295,7 @@ function chatCmd.loopCheck() end
 thread.create(function()
     while true do
         -- check cryogel
-        if emitter.getCryogel() < 63500  or receiver.getCryogel < 63500 then
+        if emitter.getCryogel() < 63500 or receiver.getCryogel() < 63500 then
             emergency("WARNING: cryogel low! check cryogel production")
         end
 
@@ -354,13 +354,10 @@ thread.create(function()
         end
 
         -- set angry state
-        print("debug1: "..angry)
         if angry then
             redstone.setOutput(angrySide, 15)
-            print("debug2: "..angry)
         else
             redstone.setOutput(angrySide, 0)
-            print("debug3: "..angry)
         end
 
         triedLowering = triedLowering - 0.5

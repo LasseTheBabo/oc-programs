@@ -60,6 +60,23 @@ local function authorized(code)
 end
 
 
+local commands = {
+    ["debug"] = function(ch, args)
+        server:send(ch, "Hello World!")
+    end,
+
+    ["auth"] = function(ch, args)
+        server:send(ch, authorized(code) and "ok" or "denied")
+    end
+}
+
+local authorizedCommands = {
+    ["exit"] = function(ch)
+        running = false
+    end
+}
+
+
 while running do
     local name, ch, message = event.pull("stem_message")
 
@@ -67,6 +84,7 @@ while running do
         local parts = split(message)
         local cmd, code = parts[1], parts[#parts]
 
+        -- TODO: FUCK EVERYTHING
         if cmd == "exit" then
             if authorized(code) then
                 running = false
@@ -74,7 +92,6 @@ while running do
                 server:send(ch, "denied")
             end
         elseif cmd == "auth" then
-            server:send(ch, authorized(code) and "ok" or "denied")
         end
     end
 end

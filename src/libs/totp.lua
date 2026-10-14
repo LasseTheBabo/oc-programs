@@ -52,7 +52,6 @@ function totp.hmac_sha1(key, msg)
     return totp.sha1(table.concat(op) .. totp.sha1(table.concat(ip) .. msg))
 end
 
--- Base32 (RFC 4648, no padding)
 local A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 function totp.b32enc(s)
     local out, buf, bits = {}, 0, 0
@@ -90,7 +89,6 @@ function totp.totp(secret, t, digits, step)
     return string.format("%0" .. digits .. "d", n % m)
 end
 
--- verify with ±1 step tolerance, and refuse reuse of an already-accepted step
 local lastStep = 0
 
 function totp.verify(secret, code, now)

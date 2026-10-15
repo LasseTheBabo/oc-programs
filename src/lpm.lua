@@ -39,9 +39,6 @@ local packages = {
     ["backup-pwr"] = {
         files = {
             ["gerver6/backup_pwr.lua"] = rc
-        },
-        post_install = {
-            "rc backup_pwr enable"
         }
     },
     ["os-door"] = {
@@ -144,12 +141,11 @@ local function install(name, force)
         return false, string.format("pkg %s not found", name)
     end
 
-    print("installing " .. name)
 
     local dependencies = pkg.deps
     if dependencies then
         for _, dependency in ipairs(dependencies) do
-            local success, r = install(dependency)
+            local success, r = install(dependency, force)
             if not success then
                 return false, string.format("failed to install %s: %s", dependency, r)
             end
@@ -162,16 +158,11 @@ local function install(name, force)
         if local_path == autorun then path = "/autorun.lua" end
 
         if force or not filesystem.exists(path) then
+            print("downloading " .. name)
             local success, r = download(url, path)
             if not success then
                 return false, string.format("failed to download %s: %s", path, r)
             end
-        end
-    end
-
-    if pkg.post_install then
-        for _, cmd in ipairs(pkg.post_install) do
-            os.execute(cmd)
         end
     end
 

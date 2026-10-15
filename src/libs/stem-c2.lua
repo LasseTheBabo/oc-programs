@@ -4,7 +4,6 @@
 -- fuck my life
 
 local event = require("event")
-local os = require("os")
 
 local stem = require("stem")
 local totp = require("totp")
@@ -81,6 +80,10 @@ function M:registerAuthorized(name, fn)
     self.authorizedCommands[name] = fn
 end
 
+function M:send(message)
+    self.server:send(self.channel_id, message)
+end
+
 function M:_authorized(code)
     if not code then
         return false
@@ -108,7 +111,7 @@ end
 function M:_run(command, args)
     local success, r = command(args)
     if not success then
-        self.server:send(self.channel_id, string.format("failed: %s", r))
+        self:send(string.format("failed: %s", r))
     end
 end
 
@@ -117,7 +120,7 @@ function M:_handleMessage(_, ch, message)
 
     local parts = split(message)
     local cmd = parts[1]
-    local isAuth = self.authorizedCommands and true or false
+    local isAuth = self.authorizedCommands[cmd] and true or false
 
     local args = {}
     for i = 2, #parts - (isAuth and 1 or 0) do
@@ -127,15 +130,15 @@ function M:_handleMessage(_, ch, message)
     if isAuth then
         local code = parts[#parts]
 
-        if code and self:authorized(code) then
+        if code and self:_authorized(code) then
             self:_run(self.authorizedCommands[cmd], args)
         else
-            self.server:send(self.channel_id, "denied")
+            self:send("denied")
         end
     elseif self.commands[cmd] then
         self:_run(self.commands[cmd], args)
     else
-        self.server:send(self.channel_id, "unknown command")
+        self:send("unknown command")
     end
 end
 
@@ -144,6 +147,7 @@ function M:start()
     self.server:subscribe(self.channel_id)
     self._listener = function(...) self:_handleMessage(...) end
     event.listen("stem_message", self._listener)
+    self:send("hello")
     self.connected = true
 end
 

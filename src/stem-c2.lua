@@ -45,6 +45,10 @@ server:subscribe(channel_id)
 
 
 local function authorized(code)
+    if code:match("^%d%d%d%d%d%d$") == nil then
+        return false
+    end
+
     local now = totp.now()
     if now < blockedUntil then return false end
     if code and totp.verify(secret, code, now) then
@@ -59,20 +63,31 @@ local function authorized(code)
     return false
 end
 
+local function run(command, ch, args)
+    local success, r = command(ch, args)
+    if not success then
+        server:send(ch, string.format("failed: %s", r))
+    end
+end
+
 
 local commands = {
-    ["debug"] = function(ch, args)
+    ["debug"] = function(ch)
         server:send(ch, "Hello World!")
+
+        return true
     end,
 
     ["auth"] = function(ch, args)
-        server:send(ch, authorized(code) and "ok" or "denied")
+        return authorized(args[1])
     end
 }
 
 local authorizedCommands = {
     ["exit"] = function(ch)
         running = false
+
+        return true
     end
 }
 
@@ -82,16 +97,27 @@ while running do
 
     if name then
         local parts = split(message)
-        local cmd, code = parts[1], parts[#parts]
+        local cmd = parts[1]
+        local args = {}
 
-        -- TODO: FUCK EVERYTHING
-        if cmd == "exit" then
-            if authorized(code) then
-                running = false
+        for i = 2, #parts - (authorizedCommands[cmd] and 1 or 0) do
+            table.insert(args, parts[i])
+        end
+
+        print(message)
+
+        if authorizedCommands[cmd] then
+            local code = parts[#parts]
+
+            if code and authorized(code) then
+                run(authorizedCommands[cmd], ch, args)
             else
                 server:send(ch, "denied")
             end
-        elseif cmd == "auth" then
+        elseif commands[cmd] then
+            run(commands[cmd], ch, args)
+        else
+            server:send(ch, "unknown command")
         end
     end
 end

@@ -37,21 +37,29 @@ end
 
 local server = stem.connect(load("stem-domain.env"))
 local channel_id = load("stem-channel.env")
-local running = true
 local secret = totp.b32dec(load("totp-secret.env"))
 local blockedUntil = 0
 local failures = 0
 server:subscribe(channel_id)
 
 
+local function close()
+    server:unsubscribe(channel_id)
+    server:disconnect()
+end
+
 local function authorized(code)
+    if not code then
+        return false
+    end
+
     if code:match("^%d%d%d%d%d%d$") == nil then
         return false
     end
 
     local now = totp.now()
     if now < blockedUntil then return false end
-    if code and totp.verify(secret, code, now) then
+    if totp.verify(secret, code, now) then
         failures = 0
         return true
     end
@@ -63,65 +71,61 @@ local function authorized(code)
     return false
 end
 
-local function run(command, ch, args)
-    local success, r = command(ch, args)
+local function run(command, args)
+    local success, r = command(args)
     if not success then
-        server:send(ch, string.format("failed: %s", r))
+        server:send(channel_id, string.format("failed: %s", r))
     end
 end
 
 
 local commands = {
-    ["debug"] = function(ch)
-        server:send(ch, "Hello World!")
+    ["ping"] = function()
+        server:send(channel_id, "pong")
 
         return true
-    end,
-
-    ["auth"] = function(ch, args)
-        return authorized(args[1])
     end
 }
 
 local authorizedCommands = {
-    ["exit"] = function(ch)
-        running = false
+    ["exit"] = function()
+        server:send(channel_id, "bye")
+        close()
+        os.execute("shutdown")
 
         return true
     end
 }
 
+local function handleStemMessage(_, _, message)
+    local parts = split(message)
+    local cmd = parts[1]
+    local args = {}
 
-while running do
-    local name, ch, message = event.pull("stem_message")
+    for i = 2, #parts - (authorizedCommands[cmd] and 1 or 0) do
+        table.insert(args, parts[i])
+    end
 
-    if name then
-        local parts = split(message)
-        local cmd = parts[1]
-        local args = {}
+    print(message)
 
-        for i = 2, #parts - (authorizedCommands[cmd] and 1 or 0) do
-            table.insert(args, parts[i])
-        end
+    if authorizedCommands[cmd] then
+        local code = parts[#parts]
 
-        print(message)
-
-        if authorizedCommands[cmd] then
-            local code = parts[#parts]
-
-            if code and authorized(code) then
-                run(authorizedCommands[cmd], ch, args)
-            else
-                server:send(ch, "denied")
-            end
-        elseif commands[cmd] then
-            run(commands[cmd], ch, args)
+        if code and authorized(code) then
+            run(authorizedCommands[cmd], args)
         else
-            server:send(ch, "unknown command")
+            server:send(channel_id, "denied")
         end
+    elseif commands[cmd] then
+        run(commands[cmd], args)
+    else
+        server:send(channel_id, "unknown command")
     end
 end
 
-server:send(channel_id, "bye")
-server:unsubscribe(channel_id)
-server:disconnect()
+event.listen("stem_message", handleStemMessage)
+
+event.pull("interrupted")
+event.ignore("stem_message", handleStemMessage)
+close()
+os.exit()

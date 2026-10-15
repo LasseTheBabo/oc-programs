@@ -1,3 +1,6 @@
+-- tmux new-session -d -s oc -x 160 -y 50 'cd ~/ocvm && while true; do ./ocvm; sleep 5; done'
+-- fuck my life
+
 local event = require("event")
 local os = require("os")
 

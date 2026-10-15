@@ -1,3 +1,5 @@
+-- unencrypted Command and Control... what did you expect
+
 -- tmux new-session -d -s oc -x 160 -y 50 'cd ~/ocvm && while true; do ./ocvm; sleep 5; done'
 -- fuck my life
 
@@ -30,28 +32,56 @@ end
 local function load(path)
     local data, r = read(path)
     if not data then
-        print(string.format("%s: %s", r, path))
-        os.exit()
+        return nil, string.format("%s: %s", r, path)
     end
 
     return data
 end
 
+local M = {}
+M.__index = M
 
-local server = stem.connect(load("stem-domain.env"))
-local channel_id = load("stem-channel.env")
-local secret = totp.b32dec(load("totp-secret.env"))
-local blockedUntil = 0
-local failures = 0
-server:subscribe(channel_id)
+function M.new(options)
+    options = options or {}
 
+    local domain, r = load(options.domain_path)
+    if not domain then return domain, r end
 
-local function close()
-    server:unsubscribe(channel_id)
-    server:disconnect()
+    local channel_id, r = load(options.channel_path)
+    if not channel_id then return channel_id, r end
+
+    local secret, r = load(options.secret_path)
+    if not secret then return secret, r end
+
+    local self = setmetatable({}, M)
+    self.channel_id = channel_id
+    self.secret = totp.b32dec(secret)
+    self.blockedUntil = 0
+    self.failures = 0
+    self.connected = false
+    self._listener = nil
+
+    self.commands = {}
+    self.authorizedCommands = {}
+
+    local ok, server = pcall(stem.connect, domain)
+    if not ok then
+        return nil, tostring(server)
+    end
+    self.server = server
+
+    return self
 end
 
-local function authorized(code)
+function M:register(name, fn)
+    self.commands[name] = fn
+end
+
+function M:registerAuthorized(name, fn)
+    self.authorizedCommands[name] = fn
+end
+
+function M:_authorized(code)
     if not code then
         return false
     end
@@ -61,74 +91,79 @@ local function authorized(code)
     end
 
     local now = totp.now()
-    if now < blockedUntil then return false end
-    if totp.verify(secret, code, now) then
-        failures = 0
+    if now < self.blockedUntil then return false end
+    if totp.verify(self.secret, code, now) then
+        self.failures = 0
         return true
     end
 
-    failures = failures + 1
-    if failures >= 5 then
-        blockedUntil = now + 60; failures = 0
+    self.failures = self.failures + 1
+    if self.failures >= 5 then
+        self.blockedUntil = now + 60
+        self.failures = 0
     end
     return false
 end
 
-local function run(command, args)
+function M:_run(command, args)
     local success, r = command(args)
     if not success then
-        server:send(channel_id, string.format("failed: %s", r))
+        self.server:send(self.channel_id, string.format("failed: %s", r))
     end
 end
 
+function M:_handleMessage(_, ch, message)
+    if ch ~= self.channel_id then return end
 
-local commands = {
-    ["ping"] = function()
-        server:send(channel_id, "pong")
-
-        return true
-    end
-}
-
-local authorizedCommands = {
-    ["exit"] = function()
-        server:send(channel_id, "bye")
-        close()
-        os.execute("shutdown")
-
-        return true
-    end
-}
-
-local function handleStemMessage(_, _, message)
     local parts = split(message)
     local cmd = parts[1]
-    local args = {}
+    local isAuth = self.authorizedCommands and true or false
 
-    for i = 2, #parts - (authorizedCommands[cmd] and 1 or 0) do
+    local args = {}
+    for i = 2, #parts - (isAuth and 1 or 0) do
         table.insert(args, parts[i])
     end
 
-    print(message)
-
-    if authorizedCommands[cmd] then
+    if isAuth then
         local code = parts[#parts]
 
-        if code and authorized(code) then
-            run(authorizedCommands[cmd], args)
+        if code and self:authorized(code) then
+            self:_run(self.authorizedCommands[cmd], args)
         else
-            server:send(channel_id, "denied")
+            self.server:send(self.channel_id, "denied")
         end
-    elseif commands[cmd] then
-        run(commands[cmd], args)
+    elseif self.commands[cmd] then
+        self:_run(self.commands[cmd], args)
     else
-        server:send(channel_id, "unknown command")
+        self.server:send(self.channel_id, "unknown command")
     end
 end
 
-event.listen("stem_message", handleStemMessage)
+function M:start()
+    if self.connected then return end
+    self.server:subscribe(self.channel_id)
+    self._listener = function(...) self:_handleMessage(...) end
+    event.listen("stem_message", self._listener)
+    self.connected = true
+end
 
-event.pull("interrupted")
-event.ignore("stem_message", handleStemMessage)
-close()
-os.exit()
+function M:stop()
+    if self._listener then
+        event.ignore("stem_message", self._listener)
+        self._listener = nil
+    end
+
+    if self.connected then
+        self.server:unsubscribe(self.channel_id)
+        self.server:disconnect()
+        self.connected = false
+    end
+end
+
+function M:run()
+    self:start()
+    event.pull("interrupted")
+    self:stop()
+end
+
+return M

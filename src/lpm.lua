@@ -32,7 +32,7 @@ local packages = {
             "logger"
         },
         files = {
-            ["dfc/dfc-screen-lua"] = autorun
+            ["dfc/dfc-screen.lua"] = autorun
         }
     },
 
@@ -40,7 +40,9 @@ local packages = {
         files = {
             ["gerver6/backup_pwr.lua"] = rc
         },
-        post_install = "rc backup_pwr enable"
+        post_install = {
+            "rc backup_pwr enable"
+        }
     },
     ["os-door"] = {
         deps = {
@@ -109,23 +111,24 @@ local packages = {
     }
 }
 
-local function split(str, sep)
-    local parts = {}
-    for part in string.gmatch(str, "([^" .. sep .. "]+)") do
-        parts[#parts + 1] = part
-    end
-    return parts
-end
-
 local function download(url, path)
     if not url then return url, "invalid url" end
     if not path then return path, "invalid path" end
 
-    local handle = internet.request(url)
-    local result = ""
-    for chunk in handle do result = result .. chunk end
+    local success, result = pcall(function()
+        local chunks = {}
+        for chunk in internet.request(url) do chunks[#chunks + 1] = chunk end
+        return table.concat(chunks)
+    end)
+    if not success then return false, result end
 
-    local file, r = io.open(path, "w")
+    local dir = filesystem.path(path)
+    if dir and not filesystem.exists(dir) then
+        local ok, r = filesystem.makeDirectory(dir)
+        if not ok then return false, r end
+    end
+
+    local file, r = io.open(path, "wb")
     if not file then return file, r end
 
     file:write(result)
@@ -135,13 +138,15 @@ local function download(url, path)
 end
 
 local function install(name, force)
-    local package = packages[name]
+    local pkg = packages[name]
 
-    if not package then
-        return false, string.format("package %s not found", name)
+    if not pkg then
+        return false, string.format("pkg %s not found", name)
     end
 
-    local dependencies = package.deps
+    print("installing " .. name)
+
+    local dependencies = pkg.deps
     if dependencies then
         for _, dependency in ipairs(dependencies) do
             local success, r = install(dependency)
@@ -151,25 +156,21 @@ local function install(name, force)
         end
     end
 
-    for url_path, local_path in pairs(package.files) do
+    for url_path, local_path in pairs(pkg.files) do
         local url = repo .. url_path
-        local parts = split(url_path, "/")
-        local path = local_path .. parts[#parts]
+        local path = local_path .. url_path:match("[^/]+$")
         if local_path == autorun then path = "/autorun.lua" end
 
-        if force ~= true and filesystem.exists(path) then
-            goto continue
+        if force or not filesystem.exists(path) then
+            local success, r = download(url, path)
+            if not success then
+                return false, string.format("failed to download %s: %s", path, r)
+            end
         end
-
-        local success, r = download(url, path)
-        if not success then
-            return false, string.format("failed to download %s: %s", path, r)
-        end
-        ::continue::
     end
 
-    if package.post_install then
-        for _, cmd in package.post_install do
+    if pkg.post_install then
+        for _, cmd in ipairs(pkg.post_install) do
             os.execute(cmd)
         end
     end
@@ -178,12 +179,12 @@ local function install(name, force)
 end
 
 local commands = {
-    ["install"] = function(package)
-        install(package)
+    ["install"] = function(pkg)
+        return install(pkg)
     end,
 
-    ["update"] = function(package)
-        install(package, true)
+    ["update"] = function(pkg)
+        return install(pkg, true)
     end
 }
 
@@ -192,18 +193,23 @@ local function help()
     for cmd in pairs(commands) do table.insert(list, cmd) end
     table.sort(list)
 
-    print(string.format("usage: lpm [%s] <package-name>", table.concat(list, "|")))
+    print(string.format("usage: lpm [%s] <pkg-name>", table.concat(list, "|")))
 end
 
-local command, package = ...
+local command, pkg = ...
 
 if not commands[command] then
     help()
 else
-    if not package then
-        print("package needed")
+    if not pkg then
+        print("pkg needed")
         help()
         return
     end
-    commands[command](package)
+
+    local success, r = commands[command](pkg)
+    if not success then
+        print("error: " .. tostring(r))
+        os.exit(1)
+    end
 end

@@ -164,7 +164,7 @@ local function install(name, force)
     local pkg = packages[name]
 
     if not pkg then
-        return false, string.format("pkg %s not found", name)
+        return false, string.format("package \"%s\" not found", name)
     end
 
 

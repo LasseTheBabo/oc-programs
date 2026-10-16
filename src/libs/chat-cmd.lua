@@ -1,6 +1,5 @@
 local component = require("component")
 local event = require("event")
-local filesystem = require("filesystem")
 
 local time = require("time")
 

@@ -1,6 +1,4 @@
-local component = require("component")
 local event = require("event")
-local os = require("os")
 
 -- Address DataBase
 -- not Android Debug Bridge

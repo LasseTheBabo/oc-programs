@@ -129,7 +129,7 @@ local packages = {
 
     ["test"] = {
         files = {
-            ["test.lua"] = "/home"
+            ["test.lua"] = "/home/"
         }
     }
 }

@@ -8,7 +8,7 @@ function totp.now()
   local path = "/tmp/.timestamp"
   local f = assert(io.open(path, "w"))
   f:write("x"); f:close()
-  return math.floor(fs.lastModified(path) / 1000)
+  return math.floor(fs.lastModified(path))
 end
 
 -- SHA1 + HMAC

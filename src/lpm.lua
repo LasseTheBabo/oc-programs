@@ -85,6 +85,27 @@ local packages = {
             ["libs/logger.lua"] = lib
         }
     },
+    ["stem"] = {
+        repo = "https://gitlab.com/UnicornFreedom/stem/-/raw/master/",
+        files = {
+            ["stem.lua"] = lib
+        }
+    },
+    ["stem-ocvm"] = { -- version for ocvm because ocvm's internet bridge is broken
+        files = {
+            ["libs/stem-ocvm.lua"] = lib,
+            ["libs/hackyinternetbridge.lua"] = lib
+        }
+    },
+    ["stem-c2"] = {
+        deps = {
+            "stem",
+            "totp"
+        },
+        files = {
+            ["libs/stem-c2.lua"] = lib
+        }
+    },
     ["tele"] = {
         files = {
             ["libs/tele.lua"] = lib
@@ -95,15 +116,20 @@ local packages = {
             ["libs/time.lua"] = lib
         }
     },
+    ["totp"] = {
+        files = {
+            ["libs/totp.lua"] = lib
+        }
+    },
     ["tui"] = {
         files = {
             ["libs/tui.lua"] = lib
         }
     },
 
-    ["debug"] = {
+    ["test"] = {
         files = {
-            ["debug.lua"] = bin
+            ["test"] = bin
         }
     }
 }
@@ -153,7 +179,7 @@ local function install(name, force)
     end
 
     for url_path, local_path in pairs(pkg.files) do
-        local url = repo .. url_path
+        local url = pkg.repo and pkg.repo or repo .. url_path
         local path = local_path .. url_path:match("[^/]+$")
         if local_path == autorun then path = "/autorun.lua" end
 

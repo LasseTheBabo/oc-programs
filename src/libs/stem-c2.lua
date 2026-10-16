@@ -81,7 +81,7 @@ function M:registerAuthorized(name, fn)
 end
 
 function M:send(message)
-    self.server:send(self.channel_id, message)
+    self.server:send(self.channel_id, string.format("[STEM-C2] %s", message))
 end
 
 function M:_authorized(code)

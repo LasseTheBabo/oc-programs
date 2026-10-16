@@ -23,12 +23,12 @@ bridge:registerAuthorized("reboot", function()
     -- no return needed because first you computer dies
 end)
 
-bridge:register("debug", function(args)
-    local tmp = totp.totp(bridge.secret, totp.now()).." "..args[#args].." "..totp.now()
-    bridge:send("debug here: "..tmp)
-    print("debug: "..tmp)
-    return true
-end)
+-- bridge:register("debug", function(args)
+-- local tmp = totp.totp(bridge.secret, totp.now()).." "..args[#args].." "..totp.now()
+--     bridge:send("debug here: "..tmp)
+--     print("debug: "..tmp)
+--     return true
+-- end)
 
 bridge:run()
 

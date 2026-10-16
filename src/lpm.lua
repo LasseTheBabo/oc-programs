@@ -184,7 +184,7 @@ local function install(name, force)
         if local_path == autorun then path = "/autorun.lua" end
 
         if force or not filesystem.exists(path) then
-            print("downloading " .. name)
+            print(string.format("downloading %s -> %s", name, path))
             local success, r = download(url, path)
             if not success then
                 return false, string.format("failed to download %s: %s", path, r)

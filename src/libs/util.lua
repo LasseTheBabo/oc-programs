@@ -18,6 +18,10 @@ function util.toBool(state)
     end
 end
 
+function util.escape(s)
+    return (s:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"))
+end
+
 function util.read(path)
     if not path then return path, "invalid path" end
 

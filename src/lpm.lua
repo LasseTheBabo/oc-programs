@@ -1,5 +1,6 @@
 local filesystem = require("filesystem")
 local internet = require("internet")
+local os = require("os")
 
 local bin = "/usr/bin/"
 local lib = "/usr/lib/"
@@ -69,7 +70,16 @@ local packages = {
             "util"
         },
         files = {
-            ["stem-logger.lua"] = autorun
+            ["stem-logger.lua"] = bin
+        }
+    },
+    ["stem-uptime-service"] = {
+        deps = {
+            "stem",
+            "util"
+        },
+        files = {
+            ["stem-uptime-service.lua"] = bin
         }
     },
 
@@ -145,6 +155,11 @@ local packages = {
         }
     },
 
+    ["lpm"] = { -- this = this
+        files = {
+            ["lpm.lua"] = "./"
+        }
+    },
     ["test"] = {
         files = {
             ["test.lua"] = "/home/"

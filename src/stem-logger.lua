@@ -40,7 +40,8 @@ local function setup()
     return true
 end
 
-if not setup() then print(r); return end
+local success, r = setup()
+if not success then print(r); return end
 server = stem.connect(domain)
 server:subscribe(channel_id)
 messageListener = function(_, _, msg) log(msg) end

@@ -237,7 +237,7 @@ local function install(name, force, originalName)
         end
     end
 
-    if name == originalName then
+    if name == originalName and pkg.post then
         for _, cmd in ipairs(pkg.post) do
             os.execute(cmd)
         end

@@ -1,16 +1,16 @@
 local computer = require("computer")
 local event = require("event")
+local term = require("term")
 
 local util = require("util")
-local stem
-local ocvm, lib = pcall(require, "stem-ocvm")
-if ocvm then stem = lib else stem = require("stem") end
+local stem = util.getStem()
 
 local channel_id = "ping_service"
 local domain
 local server
 local computers = {}
 local lastComputers = {}
+local online = {}
 local running = true
 
 local function setup()
@@ -20,6 +20,9 @@ local function setup()
 
     return true
 end
+
+local function wentOnline(name) end
+local function wentOffline(name) end
 
 local success, r = setup()
 if not success then
@@ -36,23 +39,33 @@ while running do
         local name = message:match("^ping/(.+)$")
         if name then
             computers[name] = computer.uptime()
+            online[name] = true
         end
     end
 
     for name, time in pairs(computers) do
         if time + 30 < computer.uptime() then
             computers[name] = nil
+            online[name] = false
         end
 
         if computers[name] and not lastComputers[name] then
-            print(name .. " is online")
+            wentOnline(name)
         end
     end
 
     for name in pairs(lastComputers) do
         if not computers[name] and lastComputers[name] then
-            print(name .. " is offline")
+            wentOffline(name)
         end
+    end
+
+    local y = 1
+    term.clear()
+    print("Online?\t| Name")
+    print(string.rep("-", 20))
+    for name, online in pairs(online) do
+        print(string.format("%s\t| %s", (online and "online" or "offline"), name))
     end
 
     lastComputers = {}

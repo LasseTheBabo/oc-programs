@@ -45,10 +45,12 @@ function M.new(options)
             self:send(string.format(" - %s", name))
         end
 
-        self:send("")
-        self:send("commands (requires TOTP):")
-        for name, _ in pairs(self.authorizedCommands) do
-            self:send(string.format(" - %s", name))
+        if self.authorizedCommands then
+            self:send("")
+            self:send("commands (requires TOTP):")
+            for name, _ in pairs(self.authorizedCommands) do
+                self:send(string.format(" - %s", name))
+            end
         end
     end)
 

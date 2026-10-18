@@ -90,7 +90,7 @@ function start()
             uptime_file:write("Online  | Name")
             uptime_file:write("\n--------|--------------------")
             for name, online in sortedPairs(online) do
-                uptime_file:write(string.format("\n%s\t| %s", (online and "online  " or "offline "), name))
+                uptime_file:write(string.format("\n%s| %s", (online and "online  " or "offline "), name))
             end
 
             uptime_file:close()

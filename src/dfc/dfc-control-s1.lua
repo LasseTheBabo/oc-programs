@@ -8,6 +8,7 @@ local cfg = require("config")
 local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
+local util = require("util")
 
 local redstone = component.redstone
 local emitter = component.dfc_emitter
@@ -127,27 +128,6 @@ local function checkCryogel()
 end
 
 
--- helping shit
-
-local function split(input)
-    local result = {}
-    for word in input:gmatch("%S+") do
-        table.insert(result, word)
-    end
-    return result
-end
-
-local function toBool(state)
-    if state == "true" then
-        return true
-    elseif state == "false" then
-        return false
-    else
-        return nil
-    end
-end
-
-
 -- commands
 
 commands["on"] = function()
@@ -190,7 +170,7 @@ commands["unlock"] = function()
 end
 
 commands["angry"] = function(args)
-    local state = toBool(args[1])
+    local state = util.toBool(args[1])
 
     if state == nil then
         chat.say(string.format("use \"%s angry [true or false]\" to set angry", commandPrefix))
@@ -242,7 +222,7 @@ commands["panic"] = function()
 end
 
 local function doAuthorizedShit(username, message)
-    local parts = split(message)
+    local parts = util.split(message)
 
     if parts[1] == commandPrefix then
         local command = parts[2]

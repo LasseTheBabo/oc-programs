@@ -7,35 +7,8 @@ local event = require("event")
 
 local stem = require("stem")
 local totp = require("totp")
+local util = require("util")
 
-
-local function split(input)
-    local result = {}
-    for word in input:gmatch("%S+") do
-        table.insert(result, word)
-    end
-    return result
-end
-
-local function read(path)
-    if not path then return path, "invalid path" end
-
-    local file, r = io.open(path, "r")
-    if not file then return file, r end
-    local data = file:read()
-
-    file:close()
-    return data
-end
-
-local function load(path)
-    local data, r = read(path)
-    if not data then
-        return nil, string.format("%s: %s", r, path)
-    end
-
-    return data
-end
 
 local M = {}
 M.__index = M
@@ -43,13 +16,13 @@ M.__index = M
 function M.new(options)
     options = options or {}
 
-    local domain, r = load(options.domain_path)
+    local domain, r = util.load(options.domain_path)
     if not domain then return domain, r end
 
-    local channel_id, r = load(options.channel_path)
+    local channel_id, r = util.load(options.channel_path)
     if not channel_id then return channel_id, r end
 
-    local secret, r = load(options.secret_path)
+    local secret, r = util.load(options.secret_path)
     if not secret then return secret, r end
 
     local self = setmetatable({}, M)
@@ -62,6 +35,19 @@ function M.new(options)
 
     self.commands = {}
     self.authorizedCommands = {}
+
+    self:register("help", function()
+        self:send("commands:")
+        for name, _ in pairs(self.commands) do
+            self:send(string.format(" - %s", name))
+        end
+
+        self:send("")
+        self:send("commands (requires TOTP):")
+        for name, _ in pairs(self.authorizedCommands) do
+            self:send(string.format(" - %s", name))
+        end
+    end)
 
     local ok, server = pcall(stem.connect, domain)
     if not ok then
@@ -118,7 +104,7 @@ end
 function M:_handleMessage(_, ch, message)
     if ch ~= self.channel_id then return end
 
-    local parts = split(message)
+    local parts = util.split(message)
     local cmd = parts[1]
     local isAuth = self.authorizedCommands[cmd] and true or false
 

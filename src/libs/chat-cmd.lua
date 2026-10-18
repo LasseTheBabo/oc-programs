@@ -2,6 +2,7 @@ local component = require("component")
 local event = require("event")
 
 local time = require("time")
+local util = require("util")
 
 local chatCmd = {}
 
@@ -15,16 +16,9 @@ chatCmd.denyMessage = "access denied"
 chatCmd.lastUser = ""
 chatCmd.log = nil
 
-local function split(input)
-    local result = {}
-    for word in input:gmatch("%S+") do
-        table.insert(result, word)
-    end
-    return result
-end
 
 local function doAuthorizedShit(username, message)
-    local parts = split(message)
+    local parts = util.split(message)
 
     for prefix, func in pairs(chatCmd.commands) do
         if parts[1] == prefix then

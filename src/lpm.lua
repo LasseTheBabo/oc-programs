@@ -197,7 +197,7 @@ local function install(name, force)
     end
 
     for url_path, local_path in pairs(pkg.files) do
-        local url = pkg.repo and pkg.repo or repo .. url_path
+        local url = (pkg.repo and pkg.repo or repo) .. url_path
         local path = local_path .. url_path:match("[^/]+$")
         if local_path == autorun then path = "/autorun.lua" end
 

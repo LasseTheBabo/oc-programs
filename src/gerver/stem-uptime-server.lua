@@ -1,6 +1,7 @@
 local computer = require("computer")
 local event = require("event")
 local os = require("os")
+local thread = require("thread")
 
 local util = require("util")
 local stem = util.getStem()
@@ -48,60 +49,62 @@ function start()
     end
     server = stem.connect(domain)
     server:subscribe(channel_id)
-    event.listen("interrupted", function() running = false end)
 
-    while running do
-        local _, _, message = event.pull(1, "stem_message")
+    thread.create(function()
+        while running do
+            local _, _, message = event.pull(1, "stem_message")
 
-        if message then
-            local name = message:match("^ping/(.+)$")
-            if name then
-                computers[name] = computer.uptime()
-                online[name] = true
-            end
-        end
-
-        for name, time in pairs(computers) do
-            if time + 30 < computer.uptime() then
-                computers[name] = nil
-                online[name] = false
+            if message then
+                local name = message:match("^ping/(.+)$")
+                if name then
+                    computers[name] = computer.uptime()
+                    online[name] = true
+                end
             end
 
-            if computers[name] and not lastComputers[name] then
-                wentOnline(name)
+            for name, time in pairs(computers) do
+                if time + 30 < computer.uptime() then
+                    computers[name] = nil
+                    online[name] = false
+                end
+
+                if computers[name] and not lastComputers[name] then
+                    wentOnline(name)
+                end
+            end
+
+            for name in pairs(lastComputers) do
+                if not computers[name] and lastComputers[name] then
+                    wentOffline(name)
+                end
+            end
+
+
+            local uptime_file, r = io.open("/etc/uptime.txt", "w")
+            if not uptime_file then
+                print(r)
+                os.exit()
+            end
+            uptime_file:setvbuf("no")
+
+            uptime_file:write("Online  | Name")
+            uptime_file:write("--------|--------------------")
+            for name, online in sortedPairs(online) do
+                uptime_file:write(string.format("%s\t| %s", (online and "online" or "offline"), name))
+            end
+
+            uptime_file:close()
+
+            lastComputers = {}
+            for name, time in pairs(computers) do
+                lastComputers[name] = time
             end
         end
-
-        for name in pairs(lastComputers) do
-            if not computers[name] and lastComputers[name] then
-                wentOffline(name)
-            end
-        end
-
-
-        local uptime_file, r = io.open("/etc/uptime.txt", "w")
-        if not uptime_file then
-            print(r)
-            os.exit()
-        end
-        uptime_file:setvbuf("no")
-
-        uptime_file:write("Online  | Name")
-        uptime_file:write("--------|--------------------")
-        for name, online in sortedPairs(online) do
-            uptime_file:write(string.format("%s\t| %s", (online and "online" or "offline"), name))
-        end
-
-        uptime_file:close()
-
-        lastComputers = {}
-        for name, time in pairs(computers) do
-            lastComputers[name] = time
-        end
-    end
+    end)
 end
 
 function stop()
+    running = false
     server:unsubscribe(channel_id)
     server:disconnect()
 end

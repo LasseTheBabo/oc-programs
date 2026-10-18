@@ -71,6 +71,6 @@ while true do
     -- RAM is expensive, don't clog the table
     -- delete old events after 5 minutes
     if (utcTime - last_cleanup) >= 300 then
-        pcall(flush())
+        pcall(flush)
     end
 end

@@ -91,7 +91,7 @@ local packages = {
             ["stem-uptime-client.lua"] = rc
         },
         post = {
-            "rc enable stem-uptime-client"
+            "rc stem-uptime-client enable"
         }
     },
 

@@ -6,7 +6,6 @@ local stem = util.getStem()
 local server
 local channel_id = "ping_service"
 local connected = false
-local pinging = false
 
 function start()
     local name, r = util.load("stem-name.env")
@@ -23,10 +22,10 @@ function start()
 
     server = stem.connect(domain)
     server:subscribe(channel_id)
-    pinging = true
+    connected = true
 
     thread.create(function()
-        while pinging do
+        while connected do
             server:send(channel_id, string.format("ping/%s", name))
             os.sleep(10)
         end
@@ -34,9 +33,9 @@ function start()
 end
 
 function stop()
-    if pinging and server then
-        pinging = false
+    if connected then
         server:unsubscribe(channel_id)
         server:disconnect()
+        connected = false
     end
 end

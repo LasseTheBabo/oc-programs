@@ -73,13 +73,25 @@ local packages = {
             ["stem-logger.lua"] = bin
         }
     },
-    ["stem-uptime-service"] = {
+    ["stem-uptime-server"] = {
         deps = {
             "stem",
             "util"
         },
         files = {
-            ["stem-uptime-service.lua"] = bin
+            ["stem-uptime-server.lua"] = bin
+        }
+    },
+    ["stem-uptime-client"] = {
+        deps = {
+            "stem",
+            "util"
+        },
+        files = {
+            ["stem-uptime-client.lua"] = rc
+        },
+        post = {
+            "rc enable stem-uptime-client"
         }
     },
 
@@ -193,7 +205,7 @@ local function download(url, path)
     return true
 end
 
-local function install(name, force)
+local function install(name, force, originalName)
     local pkg = packages[name]
 
     if not pkg then
@@ -225,16 +237,22 @@ local function install(name, force)
         end
     end
 
+    if name == originalName then
+        for _, cmd in ipairs(pkg.post) do
+            os.execute(cmd)
+        end
+    end
+
     return true
 end
 
 local commands = {
     ["install"] = function(pkg)
-        return install(pkg)
+        return install(pkg, false, pkg)
     end,
 
     ["update"] = function(pkg)
-        return install(pkg, true)
+        return install(pkg, true, pkg)
     end
 }
 

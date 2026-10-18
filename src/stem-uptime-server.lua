@@ -60,10 +60,9 @@ while running do
         end
     end
 
-    local y = 1
     term.clear()
-    print("Online?\t| Name")
-    print(string.rep("-", 20))
+    print("Online  | Name")
+    print("--------|--------------------")
     for name, online in pairs(online) do
         print(string.format("%s\t| %s", (online and "online" or "offline"), name))
     end

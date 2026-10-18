@@ -45,7 +45,7 @@ function M.new(options)
             self:send(string.format(" - %s", name))
         end
 
-        if self.authorizedCommands then
+        if next(self.authorizedCommands) ~= nil then
             self:send("")
             self:send("commands (requires TOTP):")
             for name, _ in pairs(self.authorizedCommands) do

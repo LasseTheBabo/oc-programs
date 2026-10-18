@@ -4,6 +4,7 @@ local filesystem = require("filesystem")
 
 local logger = require("logger")
 local time = require("time")
+local util = require("util")
 
 local terminal = component.rbmk_terminal
 
@@ -19,15 +20,6 @@ if not filesystem.exists(log_path) then
 end
 local log_file = filesystem.open(log_path, "a")
 
-
-
-local function split(input)
-    local result = {}
-    for word in input:gmatch("%S+") do
-        table.insert(result, word)
-    end
-    return result
-end
 
 local function log(message)
     local log_info = string.format("%s > %s", time.getFormattedTime(utcTime), message)
@@ -56,7 +48,7 @@ terminal.clearScreen()
 
 while true do
     local event_id = terminal.readInput()
-    local latest_event = split(event_id)
+    local latest_event = util.split(event_id)
     local _, _, _, _, direction = event.pull(0.1, "scroll")
     utcTime = time.getUnformattedTime()
 

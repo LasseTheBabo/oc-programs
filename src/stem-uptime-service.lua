@@ -38,29 +38,27 @@ while running do
         if name then
             computers[name] = computer.uptime()
         end
+    end
 
-        for name, time in pairs(computers) do
-            if time + 5 < computer.uptime() then
-                computers[name] = nil
-            end
+    for name, time in pairs(computers) do
+        if time + 5 < computer.uptime() then
+            computers[name] = nil
         end
 
-        for name in pairs(computers) do
-            if computers[name] and not lastComputers[name] then
-                print(name .. " is online")
-            end
+        if computers[name] and not lastComputers[name] then
+            print(name .. " is online")
         end
+    end
 
-        for name in pairs(lastComputers) do
-            if not computers[name] and lastComputers[name] then
-                print(name .. " is offline")
-            end
+    for name in pairs(lastComputers) do
+        if not computers[name] and lastComputers[name] then
+            print(name .. " is offline")
         end
+    end
 
-        lastComputers = {}
-        for name, time in pairs(computers) do
-            lastComputers[name] = time
-        end
+    lastComputers = {}
+    for name, time in pairs(computers) do
+        lastComputers[name] = time
     end
 end
 

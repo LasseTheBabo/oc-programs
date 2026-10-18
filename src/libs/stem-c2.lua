@@ -27,9 +27,12 @@ function M.new(options)
     local secret, r = util.load(options.secret_path)
     if not secret then return secret, r end
 
+    local name = options.name
+
     local self = setmetatable({}, M)
     self.channel_id = channel_id
     self.secret = totp.b32dec(secret)
+    self.name = name
     self.blockedUntil = 0
     self.failures = 0
     self.connected = false
@@ -69,7 +72,7 @@ function M:registerAuthorized(name, fn)
 end
 
 function M:send(message)
-    self.server:send(self.channel_id, string.format("[STEM-C2] %s", message))
+    self.server:send(self.channel_id, string.format("[%s] %s", self.name, message))
 end
 
 function M:_authorized(code)

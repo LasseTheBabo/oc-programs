@@ -4,7 +4,8 @@ local totp = require("totp")
 local bridge, r = stem_c2.new({
     domain_path = "stem-domain.env",
     channel_path = "stem-channel.env",
-    secret_path = "totp-secret.env"
+    secret_path = "totp-secret.env",
+    name = "TEST"
 })
 
 if not bridge then

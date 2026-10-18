@@ -106,7 +106,7 @@ end
 function M:_handleMessage(_, ch, message)
     if ch ~= self.channel_id then return end
 
-    if message:match("^%[.-%] ") == nil then return end -- preventing own messages to be handled
+    if message:match("^%[.-%] ") ~= nil then return end -- preventing own messages to be handled
 
     local parts = util.split(message)
     local cmd = parts[1]

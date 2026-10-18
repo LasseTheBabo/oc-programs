@@ -8,13 +8,13 @@ local channel_id = "ping_service"
 local connected = false
 
 function start()
-    local name, r = util.load("stem-name.env")
+    local name, r = util.load("/etc/stem-name.env")
     if not name then
         print(r)
         return
     end
 
-    local domain, r = util.load("stem-domain.env")
+    local domain, r = util.load("/etc/stem-domain.env")
     if not domain then
         print(r)
         return

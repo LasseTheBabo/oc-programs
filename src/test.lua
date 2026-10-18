@@ -2,9 +2,9 @@ local stem_c2 = require("stem-c2")
 local totp = require("totp")
 
 local bridge, r = stem_c2.new({
-    domain_path = "stem-domain.env",
-    channel_path = "stem-channel.env",
-    secret_path = "totp-secret.env",
+    domain_path = "/etc/stem-domain.env",
+    channel_path = "/etc/stem-channel.env",
+    secret_path = "/etc/totp-secret.env",
     name = "TEST"
 })
 

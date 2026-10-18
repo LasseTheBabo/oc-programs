@@ -80,6 +80,9 @@ local packages = {
         },
         files = {
             ["gerver/stem-uptime-server.lua"] = rc
+        },
+        post = {
+            "rc stem-uptime-server enable"
         }
     },
     ["stem-uptime-client"] = {
@@ -100,6 +103,9 @@ local packages = {
         },
         files = {
             ["gerver/stem-info-api.lua"] = rc
+        },
+        post = {
+            "rc stem-info-api enable"
         }
     },
 
@@ -248,6 +254,7 @@ local function install(name, force, originalName)
     if name == originalName and pkg.post then
         for _, cmd in ipairs(pkg.post) do
             os.execute(cmd)
+            print(cmd)
         end
     end
 

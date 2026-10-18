@@ -98,7 +98,7 @@ end
 
 function M:_run(command, args)
     local success, r = command(args)
-    if not success then
+    if success == false then
         self:send(string.format("failed: %s", r))
     end
 end
@@ -106,7 +106,7 @@ end
 function M:_handleMessage(_, ch, message)
     if ch ~= self.channel_id then return end
 
-    if message:match("^%[.-%] ") ~= nil then return end -- preventing own messages to be handled
+    if message:match("^%[.-%] ") ~= nil then return end -- preventing "[...] " to be handled e.g. "[STEM] hello"
 
     local parts = util.split(message)
     local cmd = parts[1]

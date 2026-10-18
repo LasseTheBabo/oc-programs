@@ -42,4 +42,9 @@ function util.load(path)
     return data
 end
 
+function util.getStem()
+    local ocvm, lib = pcall(require, "stem-ocvm")
+    if ocvm then return lib else return require("stem") end
+end
+
 return util

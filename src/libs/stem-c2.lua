@@ -8,10 +8,7 @@ local thread = require("thread")
 
 local totp = require("totp")
 local util = require("util")
-local stem
-local ocvm, lib = pcall(require, "stem-ocvm")
-if ocvm then stem = lib else stem = require("stem") end
-
+local stem = util.getStem()
 
 local M = {}
 M.__index = M
@@ -37,8 +34,6 @@ function M.new(options)
     self.blockedUntil = 0
     self.failures = 0
     self.connected = false
-    self.pinging = false
-    self.pingChannel = "ping_service"
     self._listener = nil
 
     self.commands = {}
@@ -138,25 +133,6 @@ function M:_handleMessage(_, ch, message)
     end
 end
 
-function M:startPingService()
-    if not self.connected then return end
-
-    self.server:subscribe(self.pingChannel)
-    self.pinging = true
-
-    thread.create(function()
-        while self.pinging do
-            self.server:send(self.pingChannel, string.format("ping/%s", self.name))
-        end
-    end)
-end
-
-function M:stopPinging()
-    if self.pinging then
-        self.pinging = false
-        self.server:unsubscribe(self.pingChannel)
-    end
-end
 
 function M:start()
     if self.connected then return end

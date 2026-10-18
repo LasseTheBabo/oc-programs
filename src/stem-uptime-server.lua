@@ -1,6 +1,5 @@
 local computer = require("computer")
 local event = require("event")
-local os = require("os")
 
 local util = require("util")
 local stem
@@ -41,7 +40,7 @@ while running do
     end
 
     for name, time in pairs(computers) do
-        if time + 5 < computer.uptime() then
+        if time + 30 < computer.uptime() then
             computers[name] = nil
         end
 

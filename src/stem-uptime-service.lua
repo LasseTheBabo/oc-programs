@@ -20,7 +20,7 @@ end
 
 local function setup()
     local var1, r = util.load("stem-domain.env")
-    if not domain then return domain, r end
+    if not var1 then return var1, r end
     domain = var1
 
     return true

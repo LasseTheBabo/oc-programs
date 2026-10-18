@@ -24,6 +24,17 @@ end
 local function wentOnline(name) end
 local function wentOffline(name) end
 
+local function sortedPairs(t)
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys)
+    local i = 0
+    return function()
+        i = i + 1
+        if keys[i] ~= nil then return keys[i], t[keys[i]] end
+    end
+end
+
 local success, r = setup()
 if not success then
     print(r); return
@@ -63,7 +74,7 @@ while running do
     term.clear()
     print("Online  | Name")
     print("--------|--------------------")
-    for name, online in pairs(online) do
+    for name, online in sortedPairs(online) do
         print(string.format("%s\t| %s", (online and "online" or "offline"), name))
     end
 

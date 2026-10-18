@@ -79,7 +79,7 @@ local packages = {
             "util"
         },
         files = {
-            ["stem-uptime-server.lua"] = bin
+            ["gerver/stem-uptime-server.lua"] = rc
         }
     },
     ["stem-uptime-client"] = {
@@ -88,10 +88,18 @@ local packages = {
             "util"
         },
         files = {
-            ["stem-uptime-client.lua"] = rc
+            ["gerver/stem-uptime-client.lua"] = rc
         },
         post = {
             "rc stem-uptime-client enable"
+        }
+    },
+    ["stem-info-api"] = {
+        deps = {
+            "stem-c2"
+        },
+        files = {
+            ["gerver/stem-info-api.lua"] = rc
         }
     },
 

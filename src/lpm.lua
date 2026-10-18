@@ -107,7 +107,7 @@ local packages = {
     ["stem-ocvm"] = { -- version for ocvm because ocvm's internet_ready is broken
         files = {
             ["libs/stem-ocvm.lua"] = lib,
-            ["libs/hackyinternetready.lua"] = lib
+            ["libs/internetready.lua"] = lib
         }
     },
     ["stem-c2"] = {

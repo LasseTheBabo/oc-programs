@@ -1,9 +1,11 @@
 local event = require("event")
 
 local logger = require("logger")
-local stem = require("stem")
 local time = require("time")
 local util = require("util")
+local stem
+local ocvm, lib = pcall(require, "stem-ocvm")
+if ocvm then stem = lib else stem = require("stem") end
 
 
 local channel_id

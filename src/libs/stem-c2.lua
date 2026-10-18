@@ -5,9 +5,11 @@
 
 local event = require("event")
 
-local stem = require("stem")
 local totp = require("totp")
 local util = require("util")
+local stem
+local ocvm, lib = pcall(require, "stem-ocvm")
+if ocvm then stem = lib else stem = require("stem") end
 
 
 local M = {}

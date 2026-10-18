@@ -21,7 +21,8 @@ local packages = {
         deps = {
             "chat-cmd",
             "tele",
-            "time"
+            "time",
+            "util"
         },
         files = {
             ["dfc/dfc-control-g6.lua"] = autorun
@@ -41,6 +42,16 @@ local packages = {
             ["gerver6/backup_pwr.lua"] = rc
         }
     },
+    ["nuke-logger"] = {
+        deps = {
+            "logger",
+            "time",
+            "util"
+        },
+        files = {
+            ["gerver6/nuke_logger.lua"] = autorun
+        }
+    },
     ["os-door"] = {
         deps = {
             "biometrics",
@@ -50,13 +61,15 @@ local packages = {
             ["gerver6/door.lua"] = autorun
         }
     },
-    ["nuke-logger"] = {
+    ["stem-logger"] = {
         deps = {
             "logger",
-            "time"
+            "stem",
+            "time",
+            "util"
         },
         files = {
-            ["gerver6/nuke_logger.lua"] = autorun
+            ["stem-logger.lua"] = autorun
         }
     },
 
@@ -124,6 +137,11 @@ local packages = {
     ["tui"] = {
         files = {
             ["libs/tui.lua"] = lib
+        }
+    },
+    ["util"] = {
+        files = {
+            ["libs/util.lua"] = lib
         }
     },
 

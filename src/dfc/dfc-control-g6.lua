@@ -22,6 +22,7 @@ local chatCmd = require("chat-cmd")
 local minitel = require("minitel")
 local tele = require("tele")
 local time = require("time")
+local util = require("util")
 
 local redstone = component.redstone
 local emitter = component.dfc_emitter
@@ -117,16 +118,6 @@ local function emergency(message)
     end
 end
 
-local function toBool(state)
-    if state == "true" then
-        return true
-    elseif state == "false" then
-        return false
-    else
-        return nil
-    end
-end
-
 local function getHeat(watt)
     return watt * 95 -- Spk
         * c1
@@ -191,7 +182,7 @@ chatCmd.commands = {
         end,
 
         ["angry"] = function(args)
-            local state = toBool(args[1])
+            local state = util.toBool(args[1])
 
             if state == nil then
                 chat.say(string.format("use \"%s angry [true or false]\" to set angry", commandPrefix))

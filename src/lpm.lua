@@ -163,7 +163,7 @@ local packages = {
             "util"
         },
         files = {
-            ["libs/stem-conn"] = lib
+            ["libs/stem-conn.lua"] = lib
         }
     },
     ["syslog"] = {

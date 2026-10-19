@@ -46,6 +46,10 @@ function M:isConnected()
     return self._server ~= nil
 end
 
+function M:isStarted()
+    return self._running
+end
+
 function M:_disconnect()
     if not self._server then return end
     pcall(self._server.unsubscribe, self._server, self.channel_id)

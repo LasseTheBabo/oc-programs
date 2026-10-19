@@ -51,11 +51,17 @@ function M.new(options)
         end
     end)
 
-    self._connection = stemConn.new({
+    local connection, r = stemConn.new({
         domain = domain,
         channel_id = channel_id,
         on_message = function(message) self:_handleMessage(message) end
     })
+
+    if not connection then
+        return nil, "failed: " .. tostring(r)
+    end
+
+    self._connection = connection
 
     return self
 end
@@ -132,7 +138,7 @@ end
 
 
 function M:start()
-    if self._conn:isConnected() then return end
+    if self._connection:isStarted() then return end
     self._connection:start()
     self:send("hello")
 end

@@ -4,11 +4,10 @@
 -- fuck my life
 
 local event = require("event")
-local thread = require("thread")
 
 local totp = require("totp")
 local util = require("util")
-local stem = util.getStem()
+local stemConn = require("stem-conn")
 
 local M = {}
 M.__index = M
@@ -33,8 +32,6 @@ function M.new(options)
     self.name = name
     self.blockedUntil = 0
     self.failures = 0
-    self.connected = false
-    self._listener = nil
 
     self.commands = {}
     self.authorizedCommands = {}
@@ -54,11 +51,11 @@ function M.new(options)
         end
     end)
 
-    local ok, server = pcall(stem.connect, domain)
-    if not ok then
-        return nil, tostring(server)
-    end
-    self.server = server
+    self._connection = stemConn.new({
+        domain = domain,
+        channel_id = channel_id,
+        on_message = function(message) self:_handleMessage(message) end
+    })
 
     return self
 end
@@ -72,7 +69,7 @@ function M:registerAuthorized(name, fn)
 end
 
 function M:send(message)
-    self.server:send(self.channel_id, string.format("[%s] %s", self.name, message))
+    self._connection:send(string.format("[%s] %s", self.name, message))
 end
 
 function M:_authorized(code)
@@ -106,10 +103,8 @@ function M:_run(command, args)
     end
 end
 
-function M:_handleMessage(_, ch, message)
-    if ch ~= self.channel_id then return end
-
-    if message:match("^%[.-%] ") ~= nil then return end -- preventing "[...] " to be handled e.g. "[STEM] hello"
+function M:_handleMessage(message)
+    if message:match("^%[.-%] ") then return end -- preventing "[...] " to be handled e.g. "[STEM] hello"
 
     local parts = util.split(message)
     local cmd = parts[1]
@@ -137,25 +132,13 @@ end
 
 
 function M:start()
-    if self.connected then return end
-    self.server:subscribe(self.channel_id)
-    self._listener = function(...) self:_handleMessage(...) end
-    event.listen("stem_message", self._listener)
+    if self._conn:isConnected() then return end
+    self._connection:start()
     self:send("hello")
-    self.connected = true
 end
 
 function M:stop()
-    if self._listener then
-        event.ignore("stem_message", self._listener)
-        self._listener = nil
-    end
-
-    if self.connected then
-        self.server:unsubscribe(self.channel_id)
-        self.server:disconnect()
-        self.connected = false
-    end
+    self._connection:stop()
 end
 
 function M:run()

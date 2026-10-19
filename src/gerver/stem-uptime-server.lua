@@ -29,7 +29,7 @@ local function setup()
 end
 
 local function notify(topic, title, message)
-    internet.request(string.format("https://%s/%spublish?title=%s&message=%s", ntfy, title:gsub(" ", "+"), message:gsub(" ", "+")))
+    internet.request(string.format("https://%s/%spublish?title=%s&message=%s", ntfy, topic, title:gsub(" ", "+"), message:gsub(" ", "+")))
 end
 
 local function wentOnline(name)

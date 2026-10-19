@@ -136,3 +136,5 @@ function M:stop()
 
     self:_disconnect()
 end
+
+return M

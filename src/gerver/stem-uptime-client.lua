@@ -5,6 +5,7 @@ local thread = require("thread")
 
 local util = require("util")
 local stem = util.getStem()
+local syslog = require("syslog")
 
 local channel_id = "ping_service"
 local server
@@ -59,9 +60,12 @@ function start()
 
         while connected do
             if not server then
+                syslog.log("INFO", "connecting stem to " .. domain)
                 if connect(domain) then
+                    syslog.log("INFO", "stem connected to " .. domain)
                     backoff = 1
                 else
+                    syslog.log("ERROR", "connection failed. retrying after " .. backoff)
                     os.sleep(backoff)
                     backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
                 end
@@ -69,6 +73,7 @@ function start()
                 local ok = pcall(server.send, server, channel_id, string.format("ping/%s", name))
 
                 if not ok or computer.uptime() - lastSeen > 30 then
+                    syslog.log("ERROR", "no message from server since 60 seconds")
                     disconnect()
                 else
                     os.sleep(10)

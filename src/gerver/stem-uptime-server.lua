@@ -29,10 +29,7 @@ local function setup()
 end
 
 local function notify(topic, title, message)
-    local h, err = internet.request(string.format("https://%s/%s", ntfy, topic), message,
-        { ["Title"] = title, ["Priority"] = "default" })
-    if not h then return nil, err end
-    return true
+    internet.request(string.format("https://%s/%spublish?title=%s&message=%s", ntfy, title:gsub(" ", "+"), message:gsub(" ", "+")))
 end
 
 local function wentOnline(name)

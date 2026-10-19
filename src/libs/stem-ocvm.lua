@@ -29,8 +29,8 @@ local server_api = {
   __port = nil,
   __socket = nil,
   __channels = {}, -- list of channels this server is subscribed to
-  __stream = "", -- the string which plays the role of bytearray for incoming data
-  
+  __stream = "",   -- the string which plays the role of bytearray for incoming data
+
   __build_package = function(type, id, message)
     local package = string.char(type)
     if type == Package.PING or type == Package.PONG then
@@ -46,11 +46,11 @@ local server_api = {
     package = string.char(math.floor(len / 256), len % 256) .. package
     return package
   end,
-  
+
   isSubscribed = function(self, id)
     return self.__channels[id]
   end,
-  
+
   send = function(self, id, message)
     if self:isConnected() then
       local data = self.__build_package(Package.MESSAGE, id, message)
@@ -65,7 +65,7 @@ local server_api = {
       return nil, "not connected"
     end
   end,
-  
+
   subscribe = function(self, id)
     if self:isConnected() then
       self.__socket.write(self.__build_package(Package.SUBSCRIBE, id))
@@ -75,7 +75,7 @@ local server_api = {
       return nil, "not connected"
     end
   end,
-  
+
   unsubscribe = function(self, id)
     if self:isConnected() then
       self.__socket.write(self.__build_package(Package.UNSUBSCRIBE, id))
@@ -119,7 +119,8 @@ local server_api = {
     if self:isConnected() then
       self:disconnect()
     end
-    self.__socket = require("internetready")(internet.connect(self.__address or ADDRESS, self.__port or PORT), internet.address)
+    self.__socket = require("internetready")(internet.connect(self.__address or ADDRESS, self.__port or PORT),
+      internet.address)
     event.listen('internet_ready', self.__listener)
     -- check connection until there will be some useful information
     -- also this serves to kick off internet_ready events generation
@@ -133,14 +134,14 @@ local server_api = {
       end
     end
   end,
-  
+
   disconnect = function(self)
     self.__socket.close()
     self.__channels = {}
     self.__stream = ""
     event.ignore('internet_ready', self.__listener)
   end,
-  
+
   __incoming = function(self, socket_id)
     -- check if the message belongs to the current connection
     if self.__socket.id() == socket_id then
@@ -189,7 +190,7 @@ local server_api = {
       end
     end
   end,
-  
+
   __process = function(self, package)
     if package.type == Package.MESSAGE then
       computer.pushSignal("stem_message", package.id, package.message)

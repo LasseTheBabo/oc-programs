@@ -1,3 +1,5 @@
+local computer = require("computer")
+local event = require("event")
 local os = require("os")
 local thread = require("thread")
 
@@ -6,7 +8,13 @@ local stem = util.getStem()
 
 local channel_id = "ping_service"
 local server
+local worker
 local connected = false
+local lastSeen = computer.uptime()
+
+local function onMessage()
+    lastSeen = computer.uptime()
+end
 
 local function disconnect()
     if server then
@@ -44,14 +52,14 @@ function start()
     end
 
     connected = true
+    event.listen("stem_message", onMessage)
 
-    thread.create(function()
+    worker = thread.create(function()
         local backoff = 1
 
         while connected do
             if not server then
-                local ok = connect(domain)
-                if ok then
+                if connect(domain) then
                     backoff = 1
                 else
                     os.sleep(backoff)
@@ -60,7 +68,7 @@ function start()
             else
                 local ok = pcall(server.send, server, channel_id, string.format("ping/%s", name))
 
-                if not ok then
+                if not ok or computer.uptime() - lastSeen > 30 then
                     disconnect()
                 else
                     os.sleep(10)
@@ -72,5 +80,7 @@ end
 
 function stop()
     connected = false
+    event.ignore("stem_message", onMessage)
+    if worker then worker:kill() worker = nil end
     disconnect()
 end

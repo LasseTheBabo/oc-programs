@@ -6,11 +6,16 @@ local thread = require("thread")
 
 local util = require("util")
 local stem = util.getStem()
+local syslog = require("syslog")
 
+local lastSeen = 0
+local lastHb = 0
+local backoff = 1
 local channel_id = "ping_service"
 local domain
 local ntfy
 local server
+local worker
 local computers = {}
 local lastComputers = {}
 local online = {}
@@ -29,7 +34,8 @@ local function setup()
 end
 
 local function notify(topic, title, message)
-    internet.request(string.format("https://%s/%s/publish?title=%s&message=%s", ntfy, topic, title:gsub(" ", "+"), message:gsub(" ", "+")))
+    internet.request(string.format("https://%s/%s/publish?title=%s&message=%s", ntfy, topic, title:gsub(" ", "+"),
+        message:gsub(" ", "+")))
 end
 
 local function wentOnline(name)
@@ -51,26 +57,71 @@ local function sortedPairs(t)
     end
 end
 
+local function disconnect()
+    if server then
+        pcall(server.unsubscribe, server, channel_id)
+        pcall(server.disconnect, server)
+        server = nil
+    end
+end
+
+local function connect()
+    local s = stem.connect(domain)
+    if not s then return false end
+    if not pcall(s.subscribe, s, channel_id) then
+        pcall(s.disconnect, s)
+        return false
+    end
+    server = s
+    lastSeen = computer.uptime()
+    return true
+end
 
 function start()
     local success, r = setup()
     if not success then
-        print(r); return
+        print(r)
+        return
     end
-    server = stem.connect(domain)
-    server:subscribe(channel_id)
+    running = true
 
-    thread.create(function()
+    worker = thread.create(function()
         while running do
-            local _, _, message = event.pull(1, "stem_message")
+            if not server then
+                syslog.log("INFO", "connecting stem to " .. domain)
+                if connect() then
+                    syslog.log("INFO", "stem connected to " .. domain)
+                    backoff = 1
+                else
+                    syslog.log("ERROR", "connection failed. retrying after " .. backoff)
+                    os.sleep(backoff)
+                    backoff = math.min(backoff * 2, 30)
+                end
+            else
+                local _, _, message = event.pull(1, "stem_message")
+                if message then
+                    lastSeen = computer.uptime()
+                    local name = message:match("^ping/(.+)$")
+                    if name then
+                        computers[name] = computer.uptime()
+                        online[name] = true
+                    end
+                end
 
-            if message then
-                local name = message:match("^ping/(.+)$")
-                if name then
-                    computers[name] = computer.uptime()
-                    online[name] = true
+                if computer.uptime() - lastHb >= 10 then
+                    lastHb = computer.uptime()
+                    if not pcall(server.send, server, channel_id, "hb") then
+                        syslog.log("ERROR", "couldn't send heartbeat message")
+                        disconnect()
+                    end
+                end
+
+                if server and computer.uptime() - lastSeen > 60 then
+                    syslog.log("ERROR", "no message from server since 60 seconds")
+                    disconnect()
                 end
             end
+
 
             for name, time in pairs(computers) do
                 if time + 30 < computer.uptime() then
@@ -115,6 +166,10 @@ end
 
 function stop()
     running = false
+    if worker then
+        worker:kill()
+        worker = nil
+    end
     server:unsubscribe(channel_id)
     server:disconnect()
 end

@@ -150,8 +150,9 @@ local packages = {
     },
     ["stem-c2"] = {
         deps = {
-            "stem",
-            "totp"
+            "stem-conn",
+            "totp",
+            "util"
         },
         files = {
             ["libs/stem-c2.lua"] = lib

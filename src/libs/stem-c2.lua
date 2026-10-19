@@ -5,9 +5,9 @@
 
 local event = require("event")
 
+local stemConn = require("stem-conn")
 local totp = require("totp")
 local util = require("util")
-local stemConn = require("stem-conn")
 
 local M = {}
 M.__index = M

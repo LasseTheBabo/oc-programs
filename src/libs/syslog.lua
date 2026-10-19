@@ -1,5 +1,5 @@
 local computer = require("computer")
-local fs = require("fs")
+local fs = require("filesystem")
 
 local M = {}
 M.path = "/var/log/syslog.log"

@@ -66,22 +66,30 @@ function start()
         return
     end
     ntfy_domain = ntfy
-    running = true
 
-    connection = stemConn.new({
+    local conn, r = stemConn.new({
         domain = domain,
         channel_id = channel_id,
         timeout = 60,
         heartbeat = 10,
         on_message = function(message)
+            connection:send("reply: " .. tostring(message))
             local name = message:match("^ping/(.+)$")
             if name then
-                computers[name] = computers.uptime()
+                computers[name] = computer.uptime()
                 online[name] = true
             end
         end
     })
+
+    if not conn then
+        syslog.log("ERROR", "uptime-server connection failed: " .. r)
+        return
+    end
+
+    connection = conn
     connection:start()
+    running = true
 
     worker = thread.create(function()
         while running do

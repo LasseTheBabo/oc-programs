@@ -26,12 +26,19 @@ function start()
         syslog.log("ERROR", "setup failed: " .. tostring(domain)) -- what the fuck it works...
         return
     end
-    
-    connection = stemConn.new({
+
+    local conn, r = stemConn.new({
         domain = domain,
         channel_id = channel_id,
         timeout = 30
     })
+
+    if not conn then
+        syslog.log("ERROR", "uptime-client connection failed: " .. r)
+        return
+    end
+
+    connection = conn
     connection:start()
     running = true
 

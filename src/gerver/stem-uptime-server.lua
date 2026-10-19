@@ -73,7 +73,6 @@ function start()
         timeout = 60,
         heartbeat = 10,
         on_message = function(message)
-            connection:send("reply: " .. tostring(message))
             local name = message:match("^ping/(.+)$")
             if name then
                 computers[name] = computer.uptime()

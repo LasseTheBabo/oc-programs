@@ -76,6 +76,7 @@ local packages = {
     ["stem-uptime-server"] = {
         deps = {
             "stem",
+            "syslog",
             "util"
         },
         files = {
@@ -88,6 +89,7 @@ local packages = {
     ["stem-uptime-client"] = {
         deps = {
             "stem",
+            "syslog",
             "util"
         },
         files = {
@@ -153,6 +155,11 @@ local packages = {
         },
         files = {
             ["libs/stem-c2.lua"] = lib
+        }
+    },
+    ["syslog"] = {
+        files = {
+            ["libs/syslog.lua"] = lib
         }
     },
     ["tele"] = {

@@ -63,6 +63,7 @@ function start()
                 syslog.log("INFO", "connecting stem to " .. domain)
                 if connect(domain) then
                     syslog.log("INFO", "stem connected to " .. domain)
+                    lastSeen = computer.uptime()
                     backoff = 1
                 else
                     syslog.log("ERROR", "connection failed. retrying after " .. backoff)

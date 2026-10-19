@@ -1,5 +1,6 @@
 local computer = require("computer")
 local event = require("event")
+local internet = require("internet")
 local os = require("os")
 local thread = require("thread")
 
@@ -8,6 +9,7 @@ local stem = util.getStem()
 
 local channel_id = "ping_service"
 local domain
+local ntfy
 local server
 local computers = {}
 local lastComputers = {}
@@ -19,15 +21,26 @@ local function setup()
     if not var1 then return var1, r end
     domain = var1
 
+    local var2, r = util.load("/etc/ntfy-domain.env")
+    if not var2 then return var2, r end
+    ntfy = var2
+
+    return true
+end
+
+local function notify(topic, title, message)
+    local h, err = internet.request(string.format("https://%s/%s", ntfy, topic), message,
+        { ["Title"] = title, ["Priority"] = "default" })
+    if not h then return nil, err end
     return true
 end
 
 local function wentOnline(name)
-    computer.pushSignal("stem_uptime", name, "1")
+    notify(channel_id, "STEM", string.format("%s is online", name))
 end
 
 local function wentOffline(name)
-    computer.pushSignal("stem_uptime", name, "0")
+    notify(channel_id, "STEM", string.format("%s is offline", name))
 end
 
 local function sortedPairs(t)

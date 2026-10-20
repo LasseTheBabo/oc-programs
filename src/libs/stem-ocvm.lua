@@ -124,7 +124,6 @@ local server_api = {
     event.listen('internet_ready', self.__listener)
     -- check connection until there will be some useful information
     -- also this serves to kick off internet_ready events generation
-    local deadline = computer.uptime() + 10
     while true do
       local result, error = self.__socket.finishConnect()
       if result then
@@ -132,9 +131,6 @@ local server_api = {
       elseif result == nil then
         self:disconnect()
         return nil, error
-      elseif computer.uptime() > deadline then
-        self:disconnect()
-        return nil, "connection timeout"
       end
     end
   end,

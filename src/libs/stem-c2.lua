@@ -52,6 +52,7 @@ function M.new(options)
     end)
 
     local connection, r = stemConn.new({
+        name = string.format("stem-c2 [%s]", name),
         domain = domain,
         channel_id = channel_id,
         on_message = function(message) self:_handleMessage(message) end

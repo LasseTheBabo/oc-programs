@@ -20,6 +20,7 @@ function M.new(options)
     end
 
     local self = setmetatable({}, M)
+    self.name = options.name
     self.domain = options.domain
     self.channel_id = options.channel_id
     self.timeout = options.timeout or 60
@@ -59,6 +60,11 @@ function M:_disconnect()
     self.on_disconnect()
 end
 
+function M:_log(level, msg)
+    local name = self.name and string.format("(%s): ", self.name)
+    syslog.log(level, name .. msg)
+end
+
 function M:_connect()
     local ok, s = pcall(stem.connect, self.domain)
     if not ok then return false, tostring(s) end
@@ -80,6 +86,7 @@ end
 function M:start()
     if self._running then return end
     self._running = true
+    self:_log("INFO", "starting")
 
     self._listener = function(_, ch, message)
         if ch ~= self.channel_id then return end
@@ -91,18 +98,26 @@ function M:start()
     self._worker = thread.create(function()
         local ok, r = pcall(function()
             local backoff = 1
+            local failures = 0
+
             while self._running do
                 if not self._server then
-                    syslog.log("INFO",
-                        string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
+                    self:_log("INFO", string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
                     local ok, r = self:_connect()
                     if ok then
-                        syslog.log("INFO", "stem connected to " .. self.domain)
+                        self:_log("INFO", "stem connected to " .. self.domain)
+                        failures = 0
                         backoff = 1
                     else
-                        syslog.log("ERROR", "connection failed: " .. tostring(r))
+                        self:_log("ERROR", "connection failed: " .. tostring(r))
                         self:_disconnect()
-                        syslog.log("DEBUG", "next connection retry after " .. tostring(backoff))
+
+                        if failures > 4 then
+                            os.execute("reboot") -- stfu "too many connections" bitch
+                        end
+
+                        self:_log("DEBUG", "next connection retry after " .. tostring(backoff))
+                        failures = failures + 1
                         os.sleep(backoff)
                         backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
                     end
@@ -110,13 +125,13 @@ function M:start()
                     if self.heartbeat and computer.uptime() - self._lastHb >= self.heartbeat then
                         self._lastHb = computer.uptime()
                         if not pcall(self._server.send, self._server, self.channel_id, self.heartbeat_msg) then
-                            syslog.log("ERROR", "heartbeat failed")
+                            self:_log("ERROR", "heartbeat failed")
                             self:_disconnect()
                         end
                     end
 
                     if computer.uptime() - self._lastSeen > self.timeout then
-                        syslog.log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
+                        self:_log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
                         self:_disconnect()
                     end
 
@@ -126,7 +141,7 @@ function M:start()
         end)
 
         if not ok then
-            syslog.err("ERROR", "stem connection worker crashed: " .. tostring(r))
+            self:_log("ERROR", "stem connection worker crashed: " .. tostring(r))
         end
     end)
 end
@@ -144,6 +159,7 @@ function M:stop()
     end
 
     self:_disconnect()
+    syslog.log("INFO", "(stem-conn) stopped")
 end
 
 return M

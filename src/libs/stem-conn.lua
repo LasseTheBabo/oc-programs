@@ -3,9 +3,9 @@ local event = require("event")
 local os = require("os")
 local thread = require("thread")
 
-local stem = getStem()
 local syslog = require("syslog")
 local util = require("util")
+local stem = getStem()
 
 local M = {}
 M.__index = M
@@ -89,12 +89,12 @@ function M:start()
     event.listen("stem_message", self._listener)
 
     self._worker = thread.create(function()
-        local backoff = 1
-
         local ok, r = pcall(function()
+            local backoff = 1
             while self._running do
                 if not self._server then
-                    syslog.log("INFO", string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
+                    syslog.log("INFO",
+                        string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
                     local ok, r = self:_connect()
                     if ok then
                         syslog.log("INFO", "stem connected to " .. self.domain)

@@ -101,6 +101,8 @@ function M:start()
                         backoff = 1
                     else
                         syslog.log("ERROR", "connection failed: " .. tostring(r))
+                        self:_disconnect()
+                        syslog.log("DEBUG", "next connection retry after " .. tostring(backoff))
                         os.sleep(backoff)
                         backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
                     end

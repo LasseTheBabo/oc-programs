@@ -3,6 +3,7 @@ local event = require("event")
 local os = require("os")
 local thread = require("thread")
 
+local stem = getStem()
 local syslog = require("syslog")
 local util = require("util")
 
@@ -59,9 +60,9 @@ function M:_disconnect()
 end
 
 function M:_connect()
-    local stem = util.getStem()
-    local s, r = stem.connect(self.domain)
-    if not s then return false, r end
+    local ok, s = pcall(stem.connect, self.domain)
+    if not ok then return false, tostring(s) end
+    if not s then return false, "connection returned nil" end
 
     local ok, e = pcall(s.subscribe, s, self.channel_id)
     if not ok then
@@ -90,34 +91,40 @@ function M:start()
     self._worker = thread.create(function()
         local backoff = 1
 
-        while self._running do
-            if not self._server then
-                syslog.log("INFO", "connecting stem to " .. self.domain)
-                local ok, r = self:_connect()
-                if ok then
-                    syslog.log("INFO", "stem connected to " .. self.domain)
-                    backoff = 1
+        local ok, r = pcall(function()
+            while self._running do
+                if not self._server then
+                    syslog.log("INFO", string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
+                    local ok, r = self:_connect()
+                    if ok then
+                        syslog.log("INFO", "stem connected to " .. self.domain)
+                        backoff = 1
+                    else
+                        syslog.log("ERROR", "connection failed: " .. tostring(r))
+                        os.sleep(backoff)
+                        backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
+                    end
                 else
-                    syslog.log("ERROR", "connection failed: " .. tostring(r))
-                    os.sleep(backoff)
-                    backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
-                end
-            else
-                if self.heartbeat and computer.uptime() - self._lastHb >= self.heartbeat then
-                    self._lastHb = computer.uptime()
-                    if not pcall(self._server.send, self._server, self.channel_id, self.heartbeat_msg) then
-                        syslog.log("ERROR", "heartbeat failed")
+                    if self.heartbeat and computer.uptime() - self._lastHb >= self.heartbeat then
+                        self._lastHb = computer.uptime()
+                        if not pcall(self._server.send, self._server, self.channel_id, self.heartbeat_msg) then
+                            syslog.log("ERROR", "heartbeat failed")
+                            self:_disconnect()
+                        end
+                    end
+
+                    if computer.uptime() - self._lastSeen > self.timeout then
+                        syslog.log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
                         self:_disconnect()
                     end
-                end
 
-                if computer.uptime() - self._lastSeen > self.timeout then
-                    syslog.log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
-                    self:_disconnect()
+                    os.sleep(1)
                 end
-
-                os.sleep(1)
             end
+        end)
+
+        if not ok then
+            syslog.err("ERROR", "stem connection worker crashed: " .. tostring(r))
         end
     end)
 end

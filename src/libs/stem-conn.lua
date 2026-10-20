@@ -5,7 +5,7 @@ local thread = require("thread")
 
 local syslog = require("syslog")
 local util = require("util")
-local stem = getStem()
+local stem = util.getStem()
 
 local M = {}
 M.__index = M

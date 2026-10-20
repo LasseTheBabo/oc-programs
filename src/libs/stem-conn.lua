@@ -97,7 +97,6 @@ function M:start()
 
     self._worker = thread.create(function()
         local ok, r = pcall(function()
-            local backoff = 1
             local failures = 0
 
             while self._running do
@@ -107,20 +106,15 @@ function M:start()
                     if ok then
                         self:_log("INFO", "stem connected")
                         failures = 0
-                        backoff = 1
                     else
                         self:_log("ERROR", "connection failed: " .. tostring(r))
                         self:_disconnect()
 
                         failures = failures + 1
-                        if failures > 4 then
+                        if failures > 2 then -- number so low because fuckass oc only allowes 4 open sockets
                             self:_log("INFO", "too many errors, rebooting")
                             os.execute("reboot") -- stfu "too many connections" bitch
                         end
-
-                        self:_log("DEBUG", "next connection retry after " .. tostring(backoff))
-                        os.sleep(backoff)
-                        backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
                     end
                 else
                     if self.heartbeat and computer.uptime() - self._lastHb >= self.heartbeat then

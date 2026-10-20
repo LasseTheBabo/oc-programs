@@ -61,7 +61,7 @@ function M:_disconnect()
 end
 
 function M:_log(level, msg)
-    local name = self.name and string.format("(%s): ", self.name)
+    local name = self.name and string.format("(%s): ", self.name) or ""
     syslog.log(level, name .. msg)
 end
 

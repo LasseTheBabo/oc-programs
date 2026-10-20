@@ -105,7 +105,7 @@ function M:start()
                     self:_log("INFO", string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
                     local ok, r = self:_connect()
                     if ok then
-                        self:_log("INFO", "stem connected to " .. self.domain)
+                        self:_log("INFO", "stem connected")
                         failures = 0
                         backoff = 1
                     else
@@ -113,6 +113,7 @@ function M:start()
                         self:_disconnect()
 
                         if failures > 4 then
+                            self:_log("INFO", "too many errors, rebooting")
                             os.execute("reboot") -- stfu "too many connections" bitch
                         end
 

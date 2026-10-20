@@ -54,8 +54,8 @@ end
 local function writeUptimeFile()
     local f, r = io.open("/etc/uptime.txt", "w")
     if not f then
-        print(r)
-        os.exit()
+        log("ERROR", "failed to open file: " .. r)
+        return
     end
     f:setvbuf("no")
 

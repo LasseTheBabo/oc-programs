@@ -26,9 +26,18 @@ local function setup()
     return domain, ntfy
 end
 
+local function log(level, msg)
+    syslog.log(level, "(stem-uptime-server): " .. msg)
+end
+
 local function notify(topic, title, message)
-    internet.request(string.format("https://%s/%s/publish?title=%s&message=%s", ntfy_domain, topic, title:gsub(" ", "+"),
-        message:gsub(" ", "+")))
+    local ok, r = pcall(internet.request,
+        string.format("https://%s/%s/publish?title=%s&message=%s", ntfy_domain, topic, title:gsub(" ", "+"),
+            message:gsub(" ", "+")))
+
+    if not ok then
+        log("ERROR", "failed to notify: " .. r)
+    end
 end
 
 local function sortedPairs(t)
@@ -62,7 +71,7 @@ end
 function start()
     local domain, ntfy = setup()
     if not domain then
-        syslog.log("ERROR", "setup failed: " .. tostring(ntfy))
+        log("ERROR", "setup failed: " .. tostring(ntfy))
         return
     end
     ntfy_domain = ntfy
@@ -83,7 +92,7 @@ function start()
     })
 
     if not conn then
-        syslog.log("ERROR", "uptime-server connection failed: " .. r)
+        log("ERROR", r)
         return
     end
 

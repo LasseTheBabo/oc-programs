@@ -112,13 +112,13 @@ function M:start()
                         self:_log("ERROR", "connection failed: " .. tostring(r))
                         self:_disconnect()
 
+                        failures = failures + 1
                         if failures > 4 then
                             self:_log("INFO", "too many errors, rebooting")
                             os.execute("reboot") -- stfu "too many connections" bitch
                         end
 
                         self:_log("DEBUG", "next connection retry after " .. tostring(backoff))
-                        failures = failures + 1
                         os.sleep(backoff)
                         backoff = math.min(backoff * 2, 30) -- discord update timeout fail ahh
                     end
@@ -160,7 +160,7 @@ function M:stop()
     end
 
     self:_disconnect()
-    syslog.log("INFO", "(stem-conn) stopped")
+    self:_log("INFO", "stopped")
 end
 
 return M

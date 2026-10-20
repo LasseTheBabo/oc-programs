@@ -21,6 +21,11 @@ bridge:register("online", function()
     end
 end)
 
+bridge:registerAuthorized("reboot", function()
+    bridge:send("bye")
+    os.execute("reboot")
+end)
+
 function start()
     bridge:start()
 end

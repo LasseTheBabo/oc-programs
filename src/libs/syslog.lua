@@ -3,7 +3,7 @@ local fs = require("filesystem")
 
 local M = {}
 M.path = "/var/log/syslog.log"
-M.maxSize = 64 * 1024
+M.maxSize = 8 * 1024 -- 8kb
 
 local function rotate()
     if fs.size(M.path) > M.maxSize then

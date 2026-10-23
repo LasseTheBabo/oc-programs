@@ -40,7 +40,7 @@ local packages = {
 
     ["backup-pwr"] = {
         files = {
-            ["gerver6/backup_pwr.lua"] = rc
+            ["gerver/backup_pwr.lua"] = rc
         }
     },
     ["nuke-logger"] = {
@@ -50,7 +50,7 @@ local packages = {
             "util"
         },
         files = {
-            ["gerver6/nuke_logger.lua"] = autorun
+            ["gerver/nuke_logger.lua"] = autorun
         }
     },
     ["os-door"] = {
@@ -59,7 +59,7 @@ local packages = {
             "config"
         },
         files = {
-            ["gerver6/door.lua"] = autorun
+            ["gerver/door.lua"] = autorun
         }
     },
     ["stem-logger"] = {

@@ -57,6 +57,8 @@ do
     for line in tmp:lines() do
         logger.add(line)
     end
+
+    tmp:close()
 end
 
 local running = true

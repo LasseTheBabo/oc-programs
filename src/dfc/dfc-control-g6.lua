@@ -72,6 +72,20 @@ if not filesystem.exists(log_path) then
 end
 local log_file = filesystem.open(log_path, "a")
 
+if screen then
+    local tmp, r = io.open(log_path, "r")
+    if not tmp then
+        print(string.format("couldn't read %s: %s", log_path, r))
+        os.exit()
+    end
+
+    for line in tmp:lines() do
+        tele.query(screen, "log", line)
+        os.sleep(0.1)
+    end
+
+    tmp:close()
+end
 
 function chatCmd.log(message)
     local year, month, day = time.getDate(chatCmd.utcTime)

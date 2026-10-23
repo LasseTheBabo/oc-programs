@@ -25,6 +25,7 @@ function M.new(options)
     self.channel_id = options.channel_id
     self.timeout = options.timeout or 60
     self.heartbeat = options.heartbeat
+    self.check_dead = options.check_dead_channel or true
     self.heartbeat_msg = options.heartbeat_msg or "hb"
     self.on_message = options.on_message or function() end
     self.on_connect = options.on_connect or function() end
@@ -125,7 +126,7 @@ function M:start()
                         end
                     end
 
-                    if computer.uptime() - self._lastSeen > self.timeout then
+                    if self.check_dead and computer.uptime() - self._lastSeen > self.timeout then
                         self:_log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
                         self:_disconnect()
                     end

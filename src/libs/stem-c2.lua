@@ -55,6 +55,7 @@ function M.new(options)
         name = string.format("stem-c2 [%s]", name),
         domain = domain,
         channel_id = channel_id,
+        check_dead_channel = false, -- yo server checkin if chat is dead? then fuck you
         on_message = function(message) self:_handleMessage(message) end
     })
 

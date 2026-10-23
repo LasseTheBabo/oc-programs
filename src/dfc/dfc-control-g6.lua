@@ -13,6 +13,7 @@
 
 local component = require("component")
 local computer = require("computer")
+local event = require("event")
 local filesystem = require("filesystem")
 local os = require("os")
 local sides = require("sides")
@@ -48,6 +49,7 @@ local maxPower = 100
 local calculating = false
 local securityLoopTime = 1
 local triedLowering = 0
+local running = true
 
 -- Core 1 information
 local c1 = 2500  -- Core
@@ -283,8 +285,11 @@ chatCmd.commands = {
 
 function chatCmd.loopCheck() end
 
+local closingHandler = function() running = false; emergency("Ctrl+C was hit") end
+event.listen("interrupted", closingHandler)
+
 thread.create(function()
-    while true do
+    while running do
         -- check cryogel
         if emitter.getCryogel() < 63500 or receiver.getCryogel() < 63500 then
             emergency("WARNING: cryogel low! check cryogel production")

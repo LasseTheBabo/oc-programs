@@ -45,7 +45,7 @@ function start()
     worker = thread.create(function()
         while running do
             connection:send(string.format("ping/%s", name))
-            os.sleep(10)
+            os.sleep(5)
         end
     end)
 end

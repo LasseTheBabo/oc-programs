@@ -15,6 +15,7 @@ chatCmd.deniedUsers = {}
 chatCmd.denyMessage = "access denied"
 chatCmd.lastUser = ""
 chatCmd.log = nil
+chatCmd.running = true
 
 
 local function doAuthorizedShit(username, message)
@@ -40,8 +41,12 @@ local function doAuthorizedShit(username, message)
     end
 end
 
+function chatCmd.stop()
+    chatCmd.running = false
+end
+
 function chatCmd.runLoop()
-    while true do
+    while chatCmd.running do
         chatCmd.utcTime = time.getUnformattedTime()
         local _, _, username, message = event.pull(10, "chat_message")
         chatCmd.lastUser = username

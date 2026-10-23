@@ -19,6 +19,8 @@ bridge:register("online", function()
     for line in file:lines() do
         bridge:send(line)
     end
+
+    file:close()
 end)
 
 bridge:registerAuthorized("reboot", function()

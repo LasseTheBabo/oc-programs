@@ -1,6 +1,7 @@
 local component = require("component")
 local event = require("event")
 local filesystem = require("filesystem")
+local os = require("os")
 
 local logger = require("logger")
 local time = require("time")
@@ -45,8 +46,24 @@ end
 terminal.enableOCMode(true)
 terminal.clearScreen()
 
+logger.log = {}
+do
+    local tmp, r = io.open(log_path, "r")
+    if not tmp then 
+        print(string.format("couldn't read %s: %s", log_path, r))
+        os.exit()
+    end
 
-while true do
+    for line in tmp:lines() do
+        logger.add(line)
+    end
+end
+
+local running = true
+local closingHandler = function() running = false end
+event.listen("interrupted", closingHandler)
+
+while running do
     local event_id = terminal.readInput()
     local latest_event = util.split(event_id)
     local _, _, _, _, direction = event.pull(0.1, "scroll")
@@ -74,3 +91,5 @@ while true do
         pcall(flush)
     end
 end
+
+event.ignore("interrupted", closingHandler)

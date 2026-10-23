@@ -16,9 +16,10 @@ if not battery then
 end
 
 local running = true
+local worker
 
 function start()
-    thread.create(function()
+    worker = thread.create(function()
         while running do
             local power, maximum, delta = battery.getEnergyInfo()
             local percentage = power * 100 / maximum
@@ -31,4 +32,8 @@ end
 
 function stop()
     running = false
+    if worker then
+        worker:kill()
+        worker = nil
+    end
 end

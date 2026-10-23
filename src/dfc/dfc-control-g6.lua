@@ -50,6 +50,7 @@ local calculating = false
 local securityLoopTime = 1
 local triedLowering = 0
 local running = true
+local worker
 
 -- Core 1 information
 local c1 = 2500  -- Core
@@ -299,10 +300,15 @@ chatCmd.commands = {
 
 function chatCmd.loopCheck() end
 
-local closingHandler = function() running = false; emergency("Ctrl+C was hit") end
+local closingHandler = function()
+    emergency("Ctrl+C was hit")
+    running = false
+    worker:kill()
+    worker = nil
+end
 event.listen("interrupted", closingHandler)
 
-thread.create(function()
+worker = thread.create(function()
     while running do
         -- check cryogel
         if emitter.getCryogel() < 63500 or receiver.getCryogel() < 63500 then

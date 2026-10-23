@@ -18,7 +18,7 @@ local function endtick()
     end
 end
 
-thread.create(function()
+local worker = thread.create(function()
     while running do
         endtick()
         local deltaTick = component.ntm_power_gauge.getTransfer()
@@ -42,5 +42,7 @@ while running  do
 
     if event == "interrupted" then
         running = false
+        worker:kill()
+        worker = nil
     end
 end

@@ -25,7 +25,7 @@ function M.new(options)
     self.channel_id = options.channel_id
     self.timeout = options.timeout or 60
     self.heartbeat = options.heartbeat
-    self.check_dead = options.check_dead_channel or true
+    self.check_dead = options.check_dead_channel and true or false
     self.heartbeat_msg = options.heartbeat_msg or "hb"
     self.on_message = options.on_message or function() end
     self.on_connect = options.on_connect or function() end

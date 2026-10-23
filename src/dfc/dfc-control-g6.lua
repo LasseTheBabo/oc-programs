@@ -303,6 +303,7 @@ function chatCmd.loopCheck() end
 local closingHandler = function()
     emergency("Ctrl+C was hit")
     running = false
+    chatCmd.stop()
     worker:kill()
     worker = nil
 end

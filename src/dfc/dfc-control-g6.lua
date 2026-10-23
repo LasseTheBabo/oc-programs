@@ -75,6 +75,9 @@ if not filesystem.exists(log_path) then
 end
 local log_file = filesystem.open(log_path, "a")
 
+
+local startupInterrupt = function() os.exit() end
+event.listen("interrupted", startupInterrupt)
 if screen then
     local tmp, r = io.open(log_path, "r")
     if not tmp then
@@ -84,7 +87,6 @@ if screen then
 
     for line in tmp:lines() do
         tele.query(screen, "log", line)
-        os.sleep(0.1)
     end
 
     tmp:close()
@@ -103,6 +105,8 @@ function chatCmd.log(message)
         tele.query(screen, "log", log_info)
     end
 end
+
+event.ignore("interrupted", startupInterrupt)
 
 chatCmd.allowedUsers = {
     ["Alexmaster75"] = true,

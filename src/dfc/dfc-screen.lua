@@ -1,9 +1,12 @@
 local event = require("event")
+local os = require("os")
 
 local logger = require("logger")
 local minitel = require("minitel")
 
 local connected = true
+local closingHandler = function() os.exit() end
+event.listen("interrupted", closingHandler)
 
 local function setStatus(message)
     logger.header = string.format("Status: %s", message)

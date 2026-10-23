@@ -17,6 +17,7 @@ local event = require("event")
 local filesystem = require("filesystem")
 local os = require("os")
 local sides = require("sides")
+local term = require("term")
 local thread = require("thread")
 
 local chatCmd = require("chat-cmd")
@@ -57,6 +58,7 @@ local c1 = 2500  -- Core
 local c1f1 = 2.5 -- Fuel 1
 local c1f2 = 2.7 -- Fuel 2
 
+term.clear()
 
 print("connecting to screen")
 local screen, r = minitel.open("dfc-screen", 7000)

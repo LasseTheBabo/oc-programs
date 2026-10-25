@@ -210,6 +210,9 @@ local packages = {
         files = {
             ["gerver/lpm-node.lua"] = rc,
             ["gerver/groups.lua"] = lib
+        },
+        post = {
+            "rc lpm-node enable"
         }
     },
     ["test"] = {

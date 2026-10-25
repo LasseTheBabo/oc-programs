@@ -5,7 +5,8 @@ local bridge, r = stem_c2.new({
     domain_path = "/etc/stem-domain.env",
     channel_path = "/etc/node-channel.env",
     secret_path = "/etc/totp-secret.env",
-    name_path = "/etc/stem-name.env"
+    name_path = "/etc/stem-name.env",
+    silent = true
 })
 
 if not bridge then
@@ -33,4 +34,8 @@ end
 
 function stop()
     bridge:stop()
+end
+
+function debug()
+    bridge:run()
 end

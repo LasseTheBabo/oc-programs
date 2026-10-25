@@ -33,10 +33,12 @@ function M.new(options)
     self.name = name
     self.blockedUntil = 0
     self.failures = 0
+    self.silent = options.silent and true or false
 
     self.commands = {}
     self.authorizedCommands = {}
 
+    if not self.silent then
     self:register("help", function()
         self:send("commands:")
         for cmd, _ in pairs(self.commands) do
@@ -51,6 +53,7 @@ function M.new(options)
             end
         end
     end)
+end
 
     local connection, r = stemConn.new({
         name = string.format("stem-c2 [%s]", name),
@@ -134,7 +137,7 @@ function M:_handleMessage(message)
         end
     elseif self.commands[cmd] then
         self:_run(self.commands[cmd], args)
-    else
+    elseif not self.silent then
         self:send("unknown command")
     end
 end

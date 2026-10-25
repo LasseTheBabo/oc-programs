@@ -198,7 +198,7 @@ local packages = {
         }
     },
 
-    ["lpm"] = { -- this = this
+    ["lpm"] = {
         files = {
             ["lpm.lua"] = bin
         }

@@ -5,7 +5,7 @@ local bridge, r = stem_c2.new({
     domain_path = "/etc/stem-domain.env",
     channel_path = "/etc/stem-channel.env",
     secret_path = "/etc/totp-secret.env",
-    name = "/etc/stem-name.env"
+    name_path = "/etc/stem-name.env"
 })
 
 if not bridge then

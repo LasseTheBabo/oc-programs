@@ -3,7 +3,7 @@ local groups = require("groups")
 
 local bridge, r = stem_c2.new({
     domain_path = "/etc/stem-domain.env",
-    channel_path = "/etc/stem-channel.env",
+    channel_path = "/etc/node-channel.env",
     secret_path = "/etc/totp-secret.env",
     name_path = "/etc/stem-name.env"
 })
@@ -24,6 +24,7 @@ bridge:registerAuthorized("update", function(name, package)
 
 
     os.execute(string.format("lpm update %s", package))
+    os.execute("reboot")
 end)
 
 function start()

@@ -99,15 +99,15 @@ local packages = {
             "rc stem-uptime-client enable"
         }
     },
-    ["stem-info-api"] = {
+    ["stem-uptime-c2"] = {
         deps = {
             "stem-c2"
         },
         files = {
-            ["gerver/stem-info-api.lua"] = rc
+            ["gerver/stem-uptime-c2.lua"] = rc
         },
         post = {
-            "rc stem-info-api enable"
+            "rc stem-uptime-c2 enable"
         }
     },
 

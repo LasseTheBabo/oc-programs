@@ -200,7 +200,16 @@ local packages = {
 
     ["lpm"] = { -- this = this
         files = {
-            ["lpm.lua"] = "./"
+            ["lpm.lua"] = bin
+        }
+    },
+    ["lpm-node"] = {
+        deps = {
+            "stem-c2"
+        },
+        files = {
+            ["gerver/lpm-node.lua"] = rc,
+            ["gerver/groups.lua"] = lib
         }
     },
     ["test"] = {
@@ -300,11 +309,12 @@ local command, pkg = ...
 
 if not commands[command] then
     help()
+    os.exit(1)
 else
     if not pkg then
         print("pkg needed")
         help()
-        return
+        os.exit(1)
     end
 
     local success, r = commands[command](pkg)

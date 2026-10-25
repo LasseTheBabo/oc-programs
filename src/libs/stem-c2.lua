@@ -24,7 +24,8 @@ function M.new(options)
     local secret, r = util.load(options.secret_path)
     if not secret then return secret, r end
 
-    local name = options.name
+    local name, r = util.load(options.name_path)
+    if not name then return name, r end
 
     local self = setmetatable({}, M)
     self.channel_id = channel_id
@@ -38,15 +39,15 @@ function M.new(options)
 
     self:register("help", function()
         self:send("commands:")
-        for name, _ in pairs(self.commands) do
-            self:send(string.format(" - %s", name))
+        for cmd, _ in pairs(self.commands) do
+            self:send(string.format(" - %s", cmd))
         end
 
         if next(self.authorizedCommands) ~= nil then
             self:send("")
             self:send("commands (requires TOTP):")
-            for name, _ in pairs(self.authorizedCommands) do
-                self:send(string.format(" - %s", name))
+            for cmd, _ in pairs(self.authorizedCommands) do
+                self:send(string.format(" - %s", cmd))
             end
         end
     end)
@@ -68,12 +69,12 @@ function M.new(options)
     return self
 end
 
-function M:register(name, fn)
-    self.commands[name] = fn
+function M:register(cmd, fn)
+    self.commands[cmd] = fn
 end
 
-function M:registerAuthorized(name, fn)
-    self.authorizedCommands[name] = fn
+function M:registerAuthorized(cmd, fn)
+    self.authorizedCommands[cmd] = fn
 end
 
 function M:send(message)

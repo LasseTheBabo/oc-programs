@@ -7,20 +7,140 @@ local syslog = require("syslog")
 local util = require("util")
 local stem = util.getStem()
 
+local Hub = {
+    domain = nil,
+    server = nil,
+    handles = {},
+    channels = {},
+    worker = nil
+}
+
+local function log(level, msg)
+    syslog.log(level, string.format("(stem-conn): %s", msg))
+end
+
+local function disconnect()
+    local s = Hub.server
+
+    if not s then return end
+    Hub.server = nil
+    for channel in pairs(Hub.channels) do
+        pcall(s.unsubscribe, s, channel)
+    end
+
+    pcall(s.disconnect())
+
+    for h in pairs(Hub.handles) do
+        h.on_disconnect()
+    end
+end
+
+local function connect()
+    local ok, s = pcall(stem.connect, Hub.domain)
+    if not ok then return false, tostring(s) end
+    if not s then return false, "connection returned nil" end
+
+    for channel in pairs(Hub.channels) do
+        local ok, e = pcall(s.subscribe, s, channel)
+
+        if not ok then
+            pcall(s.diconnect, s)
+            return false, tostring(e)
+        end
+    end
+
+    Hub.server = s
+    local now = computer.uptime()
+    for h in pairs(Hub.handles) do
+        h._lastSeen = now
+        h._lastHb = now
+        h.on_connect()
+    end
+
+    return true
+end
+
+local function startWorker()
+    if Hub.worker then return end
+
+    Hub.worker = thread.create(function()
+        local function onMessage(_, ch, message)
+            for h in pairs(Hub.handles) do
+                if h.channel_id == ch then
+                    h._lastSeen = computer.uptime()
+                    h.on_message(message)
+                end
+            end
+        end
+        event.listen("stem_message", onMessage)
+
+        local ok, r = pcall(function()
+            local failures = 0
+
+            while next(Hub.handles) do
+                if not Hub.server then
+                    local ok, r = connect()
+                    if ok then
+                        log("INFO", "connected")
+                        failures = 0
+                    else
+                        log("ERROR", "connection failed: " .. tostring(r))
+                        disconnect()
+
+                        failures = failures + 1
+                        if failures > 2 then     -- number so low because fuckass oc only allowes 4 open sockets
+                            log("INFO", "too many errors, rebooting")
+                            os.execute("reboot") -- stfu "too many connections" bitch
+                        end
+                    end
+                else
+                    local now = computer.uptime()
+
+                    for h in pairs(Hub.handles) do
+                        if h.heartbeat and now - h._lastHb >= h.heartbeat then
+                            h._lastHb = now
+                            if not pcall(Hub.server.send, Hub.server, h.channel_id, h.heartbeat_msg) then
+                                log("ERROR", "heartbeat failed")
+                                disconnect()
+                                break
+                            end
+
+                            if h.check_dead and now - h._lastSeen > h.timeout then
+                                log("ERROR", "no message since " .. h.timeout .. "s, roconnecting")
+                                disconnect()
+                                break
+                            end
+                        end
+                    end
+
+                    os.sleep(1)
+                end
+            end
+        end)
+
+        if not ok then
+            log("ERROR", "worker crashed: " .. tostring(r))
+        end
+
+        event.ignore("stem_message", onMessage)
+        disconnect()
+        Hub.worker = nil
+    end)
+
+    Hub.worker:detach()
+end
+
 local M = {}
 M.__index = M
 
 function M.new(options)
-    if not options.domain then
-        return nil, "domain required"
-    end
-
-    if not options.channel_id then
-        return nil, "channel id required"
+    if not options.domain then return nil, "domain required" end
+    if not options.channel_id then return nil, "channel id required" end
+    if Hub.domain and Hub.domain ~= options.domain then
+        return nil, "hub already uses domain " .. Hub.domain
     end
 
     local self = setmetatable({}, M)
-    self.name = options.name
     self.domain = options.domain
     self.channel_id = options.channel_id
     self.timeout = options.timeout or 60
@@ -30,19 +150,51 @@ function M.new(options)
     self.on_message = options.on_message or function() end
     self.on_connect = options.on_connect or function() end
     self.on_disconnect = options.on_disconnect or function() end
-    self._server = nil
-    self._worker = nil
-    self._listener = nil
-    self._running = false
     self._lastSeen = 0
     self._lastHb = 0
+    self._started = false
 
     return self
 end
 
+function M:start()
+    if self._started then return end
+    self._started = true
+    Hub.domain = self.domain
+    Hub.handles[self] = true
+
+    local first = (Hub.channels[self.channel_id] or 0) == 0
+    Hub.channels[self.channel_id] = (Hub.channels[self.channel_id] or 0) + 1
+
+    if Hub.server then
+        if first then pcall(Hub.server.subscribe, Hub.server, self.channel_id) end
+        self._lastSeen, self._lastHb = computer.uptime(), computer.uptime()
+        self.on_connect()
+    else
+        startWorker()
+    end
+end
+
+function M:stop()
+    if not self._started then return end
+    self._started = false
+    Hub.handles[self] = nil
+
+    local n = (Hub.channels[self.channel_id] or 1 ) - 1
+
+    if n <= 0 then
+        Hub.channels[self.channel_id] = nil
+        if Hub.server then
+            pcall(Hub.server.unsubscribe, Hub.server, self.channel_id)
+        end
+    else
+        Hub.channels[self.channel_id] = n
+    end
+end
+
 function M:send(message)
-    if not self._server then return false, "not connected" end
-    return pcall(self._server.send, self._server, self.channel_id, message)
+    if not Hub.server then return false, "not connected" end
+    return pcall(Hub.server.send, Hub.server, self.channel_id, message)
 end
 
 function M:isConnected()
@@ -50,112 +202,7 @@ function M:isConnected()
 end
 
 function M:isStarted()
-    return self._running
-end
-
-function M:_disconnect()
-    if not self._server then return end
-    pcall(self._server.unsubscribe, self._server, self.channel_id)
-    pcall(self._server.disconnect, self._server)
-    self._server = nil
-    self.on_disconnect()
-end
-
-function M:_log(level, msg)
-    local name = self.name and string.format("(%s): ", self.name) or ""
-    syslog.log(level, name .. msg)
-end
-
-function M:_connect()
-    local ok, s = pcall(stem.connect, self.domain)
-    if not ok then return false, tostring(s) end
-    if not s then return false, "connection returned nil" end
-
-    local ok, e = pcall(s.subscribe, s, self.channel_id)
-    if not ok then
-        pcall(s.diconnect, s)
-        return false, e
-    end
-
-    self._server = s
-    self._lastSeen = computer.uptime()
-    self._lastHb = computer.uptime()
-    self.on_connect()
-    return true
-end
-
-function M:start()
-    if self._running then return end
-    self._running = true
-    self:_log("INFO", "starting")
-
-    self._listener = function(_, ch, message)
-        if ch ~= self.channel_id then return end
-        self._lastSeen = computer.uptime()
-        self.on_message(message)
-    end
-    event.listen("stem_message", self._listener)
-
-    self._worker = thread.create(function()
-        local ok, r = pcall(function()
-            local failures = 0
-
-            while self._running do
-                if not self._server then
-                    self:_log("INFO", string.format("connecting stem to %s with channel %s", self.domain, self.channel_id))
-                    local ok, r = self:_connect()
-                    if ok then
-                        self:_log("INFO", "stem connected")
-                        failures = 0
-                    else
-                        self:_log("ERROR", "connection failed: " .. tostring(r))
-                        self:_disconnect()
-
-                        failures = failures + 1
-                        if failures > 2 then -- number so low because fuckass oc only allowes 4 open sockets
-                            self:_log("INFO", "too many errors, rebooting")
-                            os.execute("reboot") -- stfu "too many connections" bitch
-                        end
-                    end
-                else
-                    if self.heartbeat and computer.uptime() - self._lastHb >= self.heartbeat then
-                        self._lastHb = computer.uptime()
-                        if not pcall(self._server.send, self._server, self.channel_id, self.heartbeat_msg) then
-                            self:_log("ERROR", "heartbeat failed")
-                            self:_disconnect()
-                        end
-                    end
-
-                    if self.check_dead and computer.uptime() - self._lastSeen > self.timeout then
-                        self:_log("ERROR", "no message since " .. self.timeout .. "s, roconnecting")
-                        self:_disconnect()
-                    end
-
-                    os.sleep(1)
-                end
-            end
-        end)
-
-        if not ok then
-            self:_log("ERROR", "stem connection worker crashed: " .. tostring(r))
-        end
-    end)
-end
-
-function M:stop()
-    self._running = false
-    if self._listener then
-        event.ignore("stem_message", self._listener)
-        self._listener = nil
-    end
-
-    if self._worker then
-        self._worker:kill()
-        self._worker = nil
-    end
-
-    self:_disconnect()
-    self:_log("INFO", "stopped")
+    return self._started
 end
 
 return M

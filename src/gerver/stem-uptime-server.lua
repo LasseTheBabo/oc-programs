@@ -77,7 +77,6 @@ function start()
     ntfy_domain = ntfy
 
     local conn, r = stemConn.new({
-        name = "uptime-server",
         domain = domain,
         channel_id = channel_id,
         timeout = 60,

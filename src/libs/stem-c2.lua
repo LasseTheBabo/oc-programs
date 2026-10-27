@@ -57,7 +57,6 @@ function M.new(options)
 end
 
     local connection, r = stemConn.new({
-        name = string.format("stem-c2 [%s]", name),
         domain = domain,
         channel_id = channel_id,
         check_dead_channel = false, -- yo server checkin if chat is dead? then fuck you

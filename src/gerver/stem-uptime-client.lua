@@ -28,6 +28,7 @@ function start()
     end
 
     local conn, r = stemConn.new({
+        name = "uptime-client",
         domain = domain,
         channel_id = channel_id,
         timeout = 30

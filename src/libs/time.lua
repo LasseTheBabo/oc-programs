@@ -6,7 +6,10 @@ function time.getUnformattedTime()
     local handler, r = io.open("/tmp/realtime", "wb")
     if not handler then return handler, r end
     handler:close()
-    return fs.lastModified("/tmp/realtime")/1000
+
+    local t = fs.lastModified("/tmp/realtime")
+    if t > 1e11 then t = t / 1000 end
+    return t
 end
 
 function time.parseTime(t)
@@ -28,7 +31,7 @@ function time.getFormattedTime(t)
     local hour, min, sec = time.getTime(t)
     local formattedTime = string.format(
         "%02d:%02d:%02d %02d.%02d.%04d",
-        hour + 2, min, sec, day, month, year -- (UCT+2) fuck everyone who doesn't use european summer time
+        hour + 1, min, sec, day, month, year -- (UCT+1) fuck everyone who doesn't use european winter time
     )
     return formattedTime
 end

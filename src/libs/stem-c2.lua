@@ -6,6 +6,7 @@
 local event = require("event")
 
 local stemConn = require("stem-conn")
+local time = require("time")
 local totp = require("totp")
 local util = require("util")
 
@@ -93,7 +94,7 @@ function M:_authorized(code)
         return false
     end
 
-    local now = totp.now()
+    local now = time.getUnformattedTime()
     if now < self.blockedUntil then return false end
     if totp.verify(self.secret, code, now) then
         self.failures = 0

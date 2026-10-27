@@ -9,7 +9,7 @@ function time.getUnformattedTime()
 
     local t = fs.lastModified("/tmp/realtime")
     if t > 1e11 then t = t / 1000 end
-    return t
+    return math.floor(t)
 end
 
 function time.parseTime(t)

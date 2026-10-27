@@ -4,13 +4,6 @@ local fs = require("filesystem")
 
 local totp = {}
 
-function totp.now()
-  local path = "/tmp/.timestamp"
-  local f = assert(io.open(path, "w"))
-  f:write("x"); f:close()
-  return math.floor(fs.lastModified(path))
-end
-
 -- SHA1 + HMAC
 function totp.sha1(msg)
     local h0, h1, h2, h3, h4 = 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0

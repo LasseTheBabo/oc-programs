@@ -151,6 +151,7 @@ local packages = {
     ["stem-c2"] = {
         deps = {
             "stem-conn",
+            "time",
             "totp",
             "util"
         },

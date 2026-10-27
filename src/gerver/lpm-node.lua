@@ -23,8 +23,9 @@ bridge:registerAuthorized("update", function(name, package)
 
     if not in_group or name ~= bridge.name then return end
 
-
+    bridge:send(string.format("updating %s", package))
     os.execute(string.format("lpm update %s", package))
+    bridge:send("rebooting...")
     os.execute("reboot")
 end)
 

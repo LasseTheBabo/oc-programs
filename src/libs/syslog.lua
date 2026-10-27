@@ -1,6 +1,8 @@
 local computer = require("computer")
 local fs = require("filesystem")
 
+local time = require("time")
+
 local M = {}
 M.path = "/var/log/syslog.log"
 M.maxSize = 8 * 1024 -- 8kb
@@ -19,7 +21,7 @@ function M.log(level, msg)
         rotate()
         local f = io.open(M.path, "a")
         if f then
-            f:write(string.format("%s [%s] %s\n", os.date("%Y-%m-%d %H:%M:%S"), level, msg))
+            f:write(string.format("%s [%s] %s\n", time.getFormattedTime(time.getUnformattedTime()), level, msg))
             f:close()
         end
     end)

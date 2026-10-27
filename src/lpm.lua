@@ -169,6 +169,9 @@ local packages = {
         }
     },
     ["syslog"] = {
+        deps = {
+            "time"
+        },
         files = {
             ["libs/syslog.lua"] = lib
         }

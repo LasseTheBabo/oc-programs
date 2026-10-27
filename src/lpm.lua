@@ -212,8 +212,7 @@ local packages = {
             "stem-c2"
         },
         files = {
-            ["gerver/lpm-node.lua"] = rc,
-            ["gerver/groups.lua"] = lib
+            ["gerver/lpm-node.lua"] = rc
         },
         post = {
             "rc lpm-node enable"

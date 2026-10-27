@@ -13,7 +13,7 @@ local terminal = component.rbmk_terminal
 local last_event_times = {}
 local last_cleanup = time.getUnformattedTime()
 local log_path = "/etc/nukelogger.log"
-local utcTime = ""
+local utcTime
 
 if not filesystem.exists(log_path) then
     local handle = filesystem.open(log_path, "w")

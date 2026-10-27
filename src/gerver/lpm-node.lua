@@ -14,24 +14,18 @@ if not bridge then
     os.exit()
 end
 
-bridge:registerAuthorized("update", function(args)
-    local name = args[1]
-    local pkg = args[2]
-
-    local in_group = false
-
-
-    for _, n in ipairs(groups) do
-        if name == n then in_group = true end
-    end
-
-    if not in_group or name ~= bridge.name then return end
-
-    bridge:send(string.format("updating %s", pkg))
-    os.execute(string.format("lpm update %s", pkg))
+local function update(pkg)
+    bridge:send(string.format("updating %s", pkg[1]))
+    os.execute(string.format("lpm update %s", pkg[1]))
     bridge:send("rebooting...")
     os.execute("reboot")
-end)
+end
+
+bridge:registerAuthorized(bridge.name, update)
+
+for _, group in ipairs(groups) do
+    bridge:registerAuthorized(group, update)
+end
 
 function start()
     bridge:start()

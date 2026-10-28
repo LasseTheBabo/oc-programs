@@ -112,9 +112,9 @@ local function startWorker()
                             end
                         end
                     end
-
-                    os.sleep(1)
                 end
+
+                os.sleep(1)
             end
         end)
 

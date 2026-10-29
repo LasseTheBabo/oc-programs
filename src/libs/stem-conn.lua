@@ -28,7 +28,7 @@ local function disconnect()
         pcall(s.unsubscribe, s, channel)
     end
 
-    pcall(s.disconnect())
+    pcall(s.disconnect, s)
 
     for h in pairs(Hub.handles) do
         h.on_disconnect()
@@ -44,7 +44,7 @@ local function connect()
         local ok, e = pcall(s.subscribe, s, channel)
 
         if not ok then
-            pcall(s.diconnect, s)
+            pcall(s.disconnect, s)
             return false, tostring(e)
         end
     end

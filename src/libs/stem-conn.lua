@@ -106,11 +106,11 @@ local function startWorker()
                             end
                         end
 
-                            if h.check_dead and now - h._lastSeen > h.timeout then
-                                log("ERROR", "no message since " .. h.timeout .. "s, roconnecting")
-                                disconnect()
-                                break
-                            end
+                        if h.check_dead and now - h._lastSeen > h.timeout then
+                            log("ERROR", "no message since " .. h.timeout .. "s, reconnecting")
+                            disconnect()
+                            break
+                        end
                     end
                 end
 
@@ -145,7 +145,7 @@ function M.new(options)
     self.channel_id = options.channel_id
     self.timeout = options.timeout or 60
     self.heartbeat = options.heartbeat
-    self.check_dead = options.check_dead_channel and true or false
+    self.check_dead = options.check_dead_channel ~= false
     self.heartbeat_msg = options.heartbeat_msg or "hb"
     self.on_message = options.on_message or function() end
     self.on_connect = options.on_connect or function() end
@@ -180,7 +180,7 @@ function M:stop()
     self._started = false
     Hub.handles[self] = nil
 
-    local n = (Hub.channels[self.channel_id] or 1 ) - 1
+    local n = (Hub.channels[self.channel_id] or 1) - 1
 
     if n <= 0 then
         Hub.channels[self.channel_id] = nil

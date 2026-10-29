@@ -104,13 +104,13 @@ local function startWorker()
                                 disconnect()
                                 break
                             end
+                        end
 
                             if h.check_dead and now - h._lastSeen > h.timeout then
                                 log("ERROR", "no message since " .. h.timeout .. "s, roconnecting")
                                 disconnect()
                                 break
                             end
-                        end
                     end
                 end
 
@@ -198,7 +198,7 @@ function M:send(message)
 end
 
 function M:isConnected()
-    return self._server ~= nil
+    return Hub.server ~= nil
 end
 
 function M:isStarted()
